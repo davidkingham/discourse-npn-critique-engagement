@@ -24,11 +24,14 @@ module DiscourseNpnCritiqueEngagement
       @month = month
     end
 
+    RISING_CRITIC_KEY = "rising_critic"
+
     def record
       snapshots = record_snapshots
       grant_badges(snapshots)
+      rising_winner = award_rising_critic(snapshots)
       sync_flair_groups(snapshots)
-      create_highlights_topic(snapshots)
+      create_highlights_topic(snapshots, rising_winner)
       Recognition.rebuild!
     end
 
@@ -82,6 +85,40 @@ module DiscourseNpnCritiqueEngagement
       end
     end
 
+    # The month's most generous new critic: youngest-account members only,
+    # a minimum bar so quiet months award nobody, and one win per member ever
+    # — it is a welcome spotlight, not a ladder. The winner is remembered so
+    # their chip shows for the following month.
+    def award_rising_critic(snapshots)
+      return if !SiteSetting.npn_critique_rising_enabled
+
+      badge = Badges.rising
+      previous_winner_ids = UserBadge.where(badge_id: badge.id).pluck(:user_id)
+      newness_cutoff =
+        @month.end_of_month.end_of_day - SiteSetting.npn_critique_rising_new_user_days.days
+
+      winner =
+        snapshots
+          .select do |snapshot|
+            snapshot.weighted_replies >= SiteSetting.npn_critique_rising_min_weighted
+          end
+          .reject { |snapshot| previous_winner_ids.include?(snapshot.user_id) }
+          .select { |snapshot| snapshot.user && snapshot.user.created_at > newness_cutoff }
+          .max_by { |snapshot| [snapshot.weighted_replies, snapshot.score] }
+      return if winner.nil?
+
+      BadgeGranter.grant(badge, winner.user)
+      PluginStore.set(
+        PLUGIN_NAME,
+        RISING_CRITIC_KEY,
+        { "user_id" => winner.user_id, "month" => @month.to_s },
+      )
+      winner
+    rescue => e
+      Rails.logger.warn("NPN critique engagement: rising critic award failed: #{e.message}")
+      nil
+    end
+
     # Excellent in N of the trailing M snapshot months, including the month
     # being recorded.
     def steward_earned?(user_id)
@@ -121,7 +158,7 @@ module DiscourseNpnCritiqueEngagement
       User.where(id: user_ids - existing).each { |user| group.add(user) }
     end
 
-    def create_highlights_topic(snapshots)
+    def create_highlights_topic(snapshots, rising_winner)
       return if !SiteSetting.npn_critique_season_topic_enabled
 
       category_id = SiteSetting.npn_critique_category.presence&.to_i
@@ -138,16 +175,27 @@ module DiscourseNpnCritiqueEngagement
         User.find_by_username(SiteSetting.npn_critique_season_topic_author) || Discourse.system_user
       month = @month.strftime("%B %Y")
 
+      raw =
+        I18n.t(
+          "npn_critique_engagement.highlights_topic.body",
+          month: month,
+          winners: winners_table(winners),
+        )
+      if rising_winner
+        raw +=
+          "\n\n" +
+            I18n.t(
+              "npn_critique_engagement.highlights_topic.rising_line",
+              username: rising_winner.user.username,
+              weighted: rising_winner.weighted_replies.round(1),
+            )
+      end
+
       post =
         PostCreator.create!(
           author,
           title: I18n.t("npn_critique_engagement.highlights_topic.title", month: month),
-          raw:
-            I18n.t(
-              "npn_critique_engagement.highlights_topic.body",
-              month: month,
-              winners: winners_table(winners),
-            ),
+          raw: raw,
           category: category_id,
           skip_validations: true,
         )

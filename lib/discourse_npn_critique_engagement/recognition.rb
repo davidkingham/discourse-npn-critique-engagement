@@ -46,6 +46,10 @@ module DiscourseNpnCritiqueEngagement
         .pluck(:user_id)
         .each { |user_id| result[user_id.to_s] = "guide" }
 
+      if (rising_user_id = current_rising_critic_id)
+        result[rising_user_id.to_s] = "rising"
+      end
+
       steward_badge = Badge.find_by(name: SiteSetting.npn_critique_pillar_badge_name)
       if steward_badge
         UserBadge
@@ -55,6 +59,20 @@ module DiscourseNpnCritiqueEngagement
       end
 
       result
+    end
+
+    # The rising critic's spotlight chip lasts exactly the month after the
+    # win (July's winner wears it through August), then lapses on its own.
+    def current_rising_critic_id
+      return nil if !SiteSetting.npn_critique_rising_enabled
+
+      stored = PluginStore.get(PLUGIN_NAME, MonthlyRecognition::RISING_CRITIC_KEY)
+      return nil if stored.blank?
+
+      won_month = Date.parse(stored["month"])
+      stored["user_id"] if won_month.next_month == Date.current.beginning_of_month
+    rescue Date::Error
+      nil
     end
   end
 end

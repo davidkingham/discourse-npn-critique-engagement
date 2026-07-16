@@ -33,14 +33,20 @@ module DiscourseNpnCritiqueEngagement
     def hall_of_fame
       respond_to do |format|
         format.html { render html: nil, layout: true }
-        format.json { render json: { pillars: pillars, seasons: monthly_winners } }
+        format.json do
+          render json: {
+                   pillars: badge_holders(SiteSetting.npn_critique_pillar_badge_name),
+                   rising: badge_holders(SiteSetting.npn_critique_rising_badge_name),
+                   seasons: monthly_winners,
+                 }
+        end
       end
     end
 
     private
 
-    def pillars
-      badge = Badge.find_by(name: SiteSetting.npn_critique_pillar_badge_name)
+    def badge_holders(badge_name)
+      badge = Badge.find_by(name: badge_name)
       return [] if badge.nil?
 
       UserBadge

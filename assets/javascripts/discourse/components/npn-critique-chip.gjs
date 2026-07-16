@@ -6,6 +6,7 @@ const ICONS = {
   steward: "trophy",
   guide: "award",
   contributor: "medal",
+  rising: "seedling",
 };
 
 // Public recognition chip. Labels come from the badge-name settings so the
@@ -19,6 +20,8 @@ export default class NpnCritiqueChip extends Component {
         return this.siteSettings.npn_critique_pillar_badge_name;
       case "guide":
         return this.siteSettings.npn_critique_supporter_badge_name;
+      case "rising":
+        return this.siteSettings.npn_critique_rising_badge_name;
       default:
         return this.siteSettings.npn_critique_contributor_badge_name;
     }

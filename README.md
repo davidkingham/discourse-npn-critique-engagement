@@ -18,6 +18,10 @@ motivation, public recognition.
   permanent-badge holders ("Critique Steward") get a labeled chip next to
   their name on every post and on the user card. Positive signals only;
   `npn_critique_chip_min_tier` can extend chips to Healthy members.
+- **Rising Critic** (`npn_critique_rising_enabled`) — each month, the most
+  generous new-member critic earns a one-time badge, a distinctly styled
+  spotlight chip for the following month, a mention in the highlights topic,
+  and a permanent place on the hall of fame. Quiet months award nobody.
 - **Staff surface** — tier + score on the user card (staff only), an admin
   report with trend arrows and tier filtering, a category health dashboard,
   and an outreach queue with a shared contact log.

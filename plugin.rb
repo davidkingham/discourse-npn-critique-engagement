@@ -92,6 +92,7 @@ after_initialize do
          npn_critique_chip_min_tier
          npn_critique_pillar_badge_name
          npn_critique_engagement_enabled
+         npn_critique_rising_enabled
        ].include?(name)
       DiscourseNpnCritiqueEngagement::Recognition.rebuild!
     end

@@ -4,6 +4,7 @@ const ICONS = {
   steward: "trophy",
   guide: "award",
   contributor: "medal",
+  rising: "seedling",
 };
 
 // Renders the recognition chip beside poster names. Positive signals only —
@@ -24,6 +25,7 @@ export default {
       steward: siteSettings.npn_critique_pillar_badge_name,
       guide: siteSettings.npn_critique_supporter_badge_name,
       contributor: siteSettings.npn_critique_contributor_badge_name,
+      rising: siteSettings.npn_critique_rising_badge_name,
     };
 
     withPluginApi((api) => {

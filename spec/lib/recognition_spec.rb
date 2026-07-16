@@ -45,6 +45,41 @@ describe DiscourseNpnCritiqueEngagement::Recognition do
     expect(described_class.level_for(guide_member.id)).to eq("steward")
   end
 
+  describe "rising critic chip" do
+    before { SiteSetting.npn_critique_rising_enabled = true }
+
+    def store_rising(user, month)
+      PluginStore.set(
+        DiscourseNpnCritiqueEngagement::PLUGIN_NAME,
+        DiscourseNpnCritiqueEngagement::MonthlyRecognition::RISING_CRITIC_KEY,
+        { "user_id" => user.id, "month" => month.to_s },
+      )
+    end
+
+    it "spotlights last month's winner, superseding their ladder chip" do
+      create_score(guide_member, tier: :excellent)
+      store_rising(guide_member, 1.month.ago.beginning_of_month.to_date)
+      described_class.rebuild!
+
+      expect(described_class.level_for(guide_member.id)).to eq("rising")
+    end
+
+    it "lapses after the spotlight month" do
+      store_rising(guide_member, 2.months.ago.beginning_of_month.to_date)
+      described_class.rebuild!
+
+      expect(described_class.level_for(guide_member.id)).to be_nil
+    end
+
+    it "is inert when the feature is disabled" do
+      SiteSetting.npn_critique_rising_enabled = false
+      store_rising(guide_member, 1.month.ago.beginning_of_month.to_date)
+      described_class.rebuild!
+
+      expect(described_class.level_for(guide_member.id)).to be_nil
+    end
+  end
+
   describe "post serialization" do
     fab!(:post_record) { Fabricate(:post, user: guide_member) }
 

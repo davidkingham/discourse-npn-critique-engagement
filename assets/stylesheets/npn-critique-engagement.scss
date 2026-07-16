@@ -59,6 +59,14 @@
     background: var(--success-low, var(--tertiary-very-low));
     color: var(--success);
   }
+
+  // The new-member spotlight reads as "sprouting", deliberately unlike the
+  // metal ladder: highlight wash and a dashed border.
+  &.--rising {
+    background: var(--highlight-low, var(--highlight));
+    color: var(--primary-high);
+    border: 1px dashed var(--primary-medium);
+  }
 }
 
 .npn-critique-nudge {

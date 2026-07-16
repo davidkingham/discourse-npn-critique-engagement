@@ -27,6 +27,10 @@ en:
     npn_critique_pillar_window_months: "Trailing window (months) evaluated for the permanent badge."
     npn_critique_supporter_flair_group: "Group whose membership is replaced each season with last month's Excellent members (for flair). Plugin-managed."
     npn_critique_pillar_flair_group: "Group permanent badge earners are added to (for flair). Plugin-managed, members are never removed."
+    npn_critique_rising_enabled: "Each month, spotlight the most generous new critic: a one-time badge, a distinct chip for the following month, and a mention in the highlights topic."
+    npn_critique_rising_badge_name: "Name of the one-time new-member spotlight badge."
+    npn_critique_rising_new_user_days: "How young (in days) an account must be at month end to qualify as a new member."
+    npn_critique_rising_min_weighted: "Minimum weighted critique count to win — quiet months award nobody."
     npn_critique_chips_enabled: "Show public recognition chips next to poster names and on the user card."
     npn_critique_chip_min_tier: "Lowest tier that earns a recognition chip. 'excellent' shows chips for Guides and Stewards only; 'healthy' also marks Contributors."
     npn_critique_leaderboard_size: "How many top critics the leaderboard and monthly highlights topic show."
@@ -41,6 +45,7 @@ en:
       contributor_description: "Reached Healthy critique engagement in a calendar month"
       supporter_description: "Reached Excellent critique engagement in a calendar month"
       pillar_description: "Sustained Excellent critique engagement over many months — the rarest honor this community gives"
+      rising_description: "Dove straight into give-and-take as a new member: the month's most generous new critic"
     highlights_topic:
       title: "Critique highlights — %{month}"
       table_header: |-
@@ -54,3 +59,4 @@ en:
         %{winners}
 
         Every substantive critique counts, whenever you give it — visit a few threads and join the conversation.
+      rising_line: "🌱 **Rising critic of the month:** @%{username} — %{weighted} weighted critiques in their first weeks. Welcome, and thank you for diving straight in!"

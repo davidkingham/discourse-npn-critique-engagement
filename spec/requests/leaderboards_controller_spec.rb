@@ -92,14 +92,17 @@ describe DiscourseNpnCritiqueEngagement::LeaderboardsController do
       )
     end
 
-    it "lists steward badge holders" do
-      badge = DiscourseNpnCritiqueEngagement::Badges.pillar
-      BadgeGranter.grant(badge, top_critic)
+    it "lists steward badge holders and rising critics" do
+      BadgeGranter.grant(DiscourseNpnCritiqueEngagement::Badges.pillar, top_critic)
+      BadgeGranter.grant(DiscourseNpnCritiqueEngagement::Badges.rising, runner_up)
 
       get "/critique-engagement/hall-of-fame.json"
 
       expect(response.parsed_body["pillars"].map { |pillar| pillar["username"] }).to eq(
         [top_critic.username],
+      )
+      expect(response.parsed_body["rising"].map { |critic| critic["username"] }).to eq(
+        [runner_up.username],
       )
     end
   end

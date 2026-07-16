@@ -28,6 +28,8 @@ en:
         pillars_empty: "No one has earned the permanent honor yet."
         seasons_title: "Monthly winners"
         seasons_empty: "No completed months yet."
+        rising_title: "Rising critics"
+        rising_empty: "No rising critics honored yet — new members, the spotlight is open."
         leaderboard_link: "Current leaderboard"
       impact:
         title: "Your critique impact"

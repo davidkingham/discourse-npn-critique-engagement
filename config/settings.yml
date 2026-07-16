@@ -119,6 +119,24 @@ plugins:
     default: ""
     type: group
 
+  # --- Rising critic (new-member spotlight) -----------------------------------
+
+  npn_critique_rising_enabled:
+    default: false
+    client: true
+
+  npn_critique_rising_badge_name:
+    default: "Rising Critic"
+    client: true
+
+  npn_critique_rising_new_user_days:
+    default: 60
+    min: 1
+
+  npn_critique_rising_min_weighted:
+    default: 3.0
+    type: float
+
   # --- Recognition chips ------------------------------------------------------
 
   npn_critique_chips_enabled:

@@ -7,6 +7,7 @@ describe DiscourseNpnCritiqueEngagement::MonthlyRecognition do
   fab!(:star_critic) { Fabricate(:user, created_at: 6.months.ago) }
   fab!(:casual_critic) { Fabricate(:user, created_at: 6.months.ago) }
   fab!(:poster) { Fabricate(:user, created_at: 6.months.ago) }
+  fab!(:rising_star) { Fabricate(:user, created_at: 20.days.ago) }
   fab!(:guide_group, :group)
   fab!(:steward_group, :group)
 
@@ -33,6 +34,7 @@ describe DiscourseNpnCritiqueEngagement::MonthlyRecognition do
     extra_topic = Fabricate(:topic, category: category, user: poster)
     Fabricate(:post, topic: extra_topic, user: poster)
     Fabricate(:post, topic: extra_topic, user: casual_critic, raw: "critique " * 20)
+    Fabricate(:post, topic: extra_topic, user: rising_star, raw: "critique " * 20)
 
     # The nightly job has been running since before the month ended.
     PluginStore.set(
@@ -104,6 +106,57 @@ describe DiscourseNpnCritiqueEngagement::MonthlyRecognition do
 
     expect(guide_group.reload.users).to contain_exactly(star_critic)
     expect(steward_group.reload.users).to contain_exactly(stale_member, star_critic)
+  end
+
+  describe "rising critic" do
+    before do
+      SiteSetting.npn_critique_rising_enabled = true
+      SiteSetting.npn_critique_rising_min_weighted = 1.0
+    end
+
+    def rising_badge
+      Badge.find_by(name: SiteSetting.npn_critique_rising_badge_name)
+    end
+
+    it "spotlights the most generous new critic and remembers them for the chip" do
+      described_class.record_due
+
+      expect(UserBadge.where(badge: rising_badge).pluck(:user_id)).to contain_exactly(
+        rising_star.id,
+      )
+      stored =
+        PluginStore.get(
+          DiscourseNpnCritiqueEngagement::PLUGIN_NAME,
+          described_class::RISING_CRITIC_KEY,
+        )
+      expect(stored["user_id"]).to eq(rising_star.id)
+      expect(stored["month"]).to eq(last_month.to_s)
+    end
+
+    it "mentions the rising critic in the highlights topic" do
+      described_class.record_due
+
+      topic = Topic.where(category_id: category.id).order(created_at: :desc).first
+      expect(topic.first_post.raw).to include("Rising critic of the month")
+      expect(topic.first_post.raw).to include("@#{rising_star.username}")
+    end
+
+    it "never awards the same member twice" do
+      BadgeGranter.grant(DiscourseNpnCritiqueEngagement::Badges.rising, rising_star)
+
+      expect { described_class.record_due }.not_to change(
+        UserBadge.where(badge: rising_badge),
+        :count,
+      )
+    end
+
+    it "awards nobody when no new member clears the bar" do
+      SiteSetting.npn_critique_rising_min_weighted = 50.0
+
+      described_class.record_due
+
+      expect(UserBadge.where(badge: rising_badge).count).to eq(0)
+    end
   end
 
   it "posts a pinned highlights topic naming the top critics" do

@@ -54,6 +54,35 @@ export default <template>
       {{/if}}
     </section>
 
+    <section class="npn-hall-of-fame__rising">
+      <h2>{{i18n "npn_critique_engagement.hall_of_fame.rising_title"}}</h2>
+      {{#if @controller.model.rising.length}}
+        <ul class="npn-hall-of-fame__pillar-list">
+          {{#each @controller.model.rising as |critic|}}
+            <li class="npn-hall-of-fame__pillar">
+              <a
+                class="npn-hall-of-fame__member"
+                href={{userPath critic.username}}
+                data-user-card={{critic.username}}
+              >
+                {{dBoundAvatarTemplate critic.avatar_template "large"}}
+                <span class="npn-hall-of-fame__username">
+                  {{critic.username}}
+                </span>
+              </a>
+              <span class="npn-hall-of-fame__granted">
+                {{dFormatDate critic.granted_at leaveAgo="true"}}
+              </span>
+            </li>
+          {{/each}}
+        </ul>
+      {{else}}
+        <p class="npn-hall-of-fame__empty">
+          {{i18n "npn_critique_engagement.hall_of_fame.rising_empty"}}
+        </p>
+      {{/if}}
+    </section>
+
     <section class="npn-hall-of-fame__seasons">
       <h2>{{i18n "npn_critique_engagement.hall_of_fame.seasons_title"}}</h2>
       {{#if @controller.model.seasons.length}}

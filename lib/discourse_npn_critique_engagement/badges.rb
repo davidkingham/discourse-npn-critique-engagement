@@ -38,6 +38,16 @@ module DiscourseNpnCritiqueEngagement
       )
     end
 
+    def self.rising
+      ensure_badge(
+        SiteSetting.npn_critique_rising_badge_name,
+        badge_type_id: BRONZE,
+        multiple_grant: false,
+        icon: "seedling",
+        description_key: "rising_description",
+      )
+    end
+
     def self.ensure_badge(name, badge_type_id:, multiple_grant:, icon:, description_key:)
       Badge.find_by(name: name) ||
         Badge.create!(
