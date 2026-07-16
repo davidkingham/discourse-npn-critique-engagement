@@ -16,6 +16,7 @@ en:
     npn_critique_owner_award_multiplier: "Multiplier when the award comes from the topic owner — the member whose work was critiqued."
     npn_critique_top_critiques_count: "How many most-awarded critiques the monthly highlights topic and the hall of fame showcase."
     npn_critique_editors_pick_tag: "The tag the editors' pick review queue applies when staff make a pick."
+    npn_critique_coverage_days: "How many days back the moderator dashboard looks for images still waiting for a substantive critique."
     npn_critique_editors_pick_badge_name: "Badge granted to the photographer when their image is picked, tied to the image post. Leave blank to skip."
     npn_critique_editors_pick_pm_enabled: "Send the photographer a congratulations PM when their image is picked."
     npn_critique_award_badges_enabled: "Each month, grant post-tied badges for comments that received award reactions during the month."

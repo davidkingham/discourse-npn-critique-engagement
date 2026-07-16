@@ -70,6 +70,20 @@ en:
       nudge:
         copy: "You've shared %{shared} photos and critiqued %{critiqued} recently. Image Critiques runs on give-and-take — consider visiting a few threads first. Members who critique regularly get more feedback on their own work."
         dismiss: "Dismiss reminder"
+      moderate:
+        title: "Moderator dashboard"
+        description: "Everything to triage in one place. Staff only."
+        coverage_title: "Waiting for a critique"
+        coverage_hint: "New members first — this is the moment that decides whether they stay. Then our most generous critics: they've earned feedback on their own work."
+        coverage_empty: "Every recent image has a substantive critique. Well done."
+        picks_title: "This week's picks"
+        picks_hint: "One editors' pick per genre, each week."
+        picks_empty: "No images posted this week yet."
+        picked_by: "Picked by @%{username}"
+        pick_open: "No pick yet"
+        picks_link: "Open the pick queue"
+        outreach_title: "Priority outreach"
+        outreach_link: "Open outreach"
       editors_picks:
         title: "Editors' pick review"
         description: "This week's images with each poster's give-and-take standing. Staff only."

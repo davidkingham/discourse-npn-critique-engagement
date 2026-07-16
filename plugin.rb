@@ -49,6 +49,7 @@ after_initialize do
   require_relative "app/controllers/discourse_npn_critique_engagement/leaderboards_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/impact_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/editors_picks_controller"
+  require_relative "app/controllers/discourse_npn_critique_engagement/moderate_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/admin/reports_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/admin/outreach_controller"
   require_relative "app/jobs/scheduled/npn_critique_scores_refresh"

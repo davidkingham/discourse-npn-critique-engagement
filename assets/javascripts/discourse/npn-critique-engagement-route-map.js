@@ -11,4 +11,7 @@ export default function () {
   this.route("critique-outreach", {
     path: "/critique-engagement/outreach",
   });
+  this.route("critique-moderate", {
+    path: "/critique-engagement/moderate",
+  });
 }
