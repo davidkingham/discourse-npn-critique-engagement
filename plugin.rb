@@ -34,6 +34,7 @@ after_initialize do
   require_relative "lib/discourse_npn_critique_engagement/scorer"
   require_relative "lib/discourse_npn_critique_engagement/badges"
   require_relative "lib/discourse_npn_critique_engagement/recognition"
+  require_relative "lib/discourse_npn_critique_engagement/awarded_critiques"
   require_relative "lib/discourse_npn_critique_engagement/monthly_recognition"
   require_relative "app/models/discourse_npn_critique_engagement/score"
   require_relative "app/models/discourse_npn_critique_engagement/monthly_snapshot"

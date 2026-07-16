@@ -174,6 +174,37 @@ describe DiscourseNpnCritiqueEngagement::MonthlyRecognition do
     end
   end
 
+  it "showcases the month's most awarded critiques in the highlights topic" do
+    in_month = last_month + 10.days
+    awarded_topic = Fabricate(:topic, category: category, user: poster, created_at: in_month)
+    Fabricate(:post, topic: awarded_topic, user: poster, created_at: in_month)
+    awarded_post =
+      Fabricate(
+        :post,
+        topic: awarded_topic,
+        user: star_critic,
+        raw: "critique " * 20,
+        created_at: in_month,
+      )
+    reaction =
+      DiscourseReactions::Reaction.create!(
+        post_id: awarded_post.id,
+        reaction_value: "award-critique",
+        reaction_type: :emoji,
+      )
+    DiscourseReactions::ReactionUser.create!(
+      reaction_id: reaction.id,
+      user_id: poster.id,
+      post_id: awarded_post.id,
+    )
+
+    described_class.record_due
+
+    topic = Topic.where(category_id: category.id).order(created_at: :desc).first
+    expect(topic.first_post.raw).to include("Most awarded critiques")
+    expect(topic.first_post.raw).to include(awarded_post.url)
+  end
+
   it "posts a pinned highlights topic naming the top critics" do
     described_class.record_due
 

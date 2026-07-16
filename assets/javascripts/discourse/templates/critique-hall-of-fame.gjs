@@ -83,6 +83,43 @@ export default <template>
       {{/if}}
     </section>
 
+    <section class="npn-hall-of-fame__top-critiques">
+      <h2>{{i18n
+          "npn_critique_engagement.hall_of_fame.top_critiques_title"
+        }}</h2>
+      {{#if @controller.model.top_critiques.length}}
+        <ol class="npn-hall-of-fame__critique-list">
+          {{#each @controller.model.top_critiques as |critique|}}
+            <li class="npn-hall-of-fame__critique">
+              <a
+                class="npn-hall-of-fame__member"
+                href={{userPath critique.username}}
+                data-user-card={{critique.username}}
+              >
+                {{dBoundAvatarTemplate critique.avatar_template "small"}}
+                <span class="npn-hall-of-fame__username">
+                  {{critique.username}}
+                </span>
+              </a>
+              <a class="npn-hall-of-fame__critique-link" href={{critique.url}}>
+                {{critique.topic_title}}
+              </a>
+              <span class="npn-hall-of-fame__critique-awards">
+                {{i18n
+                  "npn_critique_engagement.hall_of_fame.award_count"
+                  count=critique.award_count
+                }}
+              </span>
+            </li>
+          {{/each}}
+        </ol>
+      {{else}}
+        <p class="npn-hall-of-fame__empty">
+          {{i18n "npn_critique_engagement.hall_of_fame.top_critiques_empty"}}
+        </p>
+      {{/if}}
+    </section>
+
     <section class="npn-hall-of-fame__seasons">
       <h2>{{i18n "npn_critique_engagement.hall_of_fame.seasons_title"}}</h2>
       {{#if @controller.model.seasons.length}}

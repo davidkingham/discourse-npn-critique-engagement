@@ -92,6 +92,33 @@ describe DiscourseNpnCritiqueEngagement::LeaderboardsController do
       )
     end
 
+    it "lists the all-time most awarded critiques" do
+      category = Fabricate(:category)
+      SiteSetting.npn_critique_category = category.id.to_s
+      topic = Fabricate(:topic, category: category, user: struggling_member)
+      Fabricate(:post, topic: topic, user: struggling_member)
+      critique = Fabricate(:post, topic: topic, user: top_critic, raw: "critique " * 20)
+      reaction =
+        DiscourseReactions::Reaction.create!(
+          post_id: critique.id,
+          reaction_value: "award-critique",
+          reaction_type: :emoji,
+        )
+      DiscourseReactions::ReactionUser.create!(
+        reaction_id: reaction.id,
+        user_id: struggling_member.id,
+        post_id: critique.id,
+      )
+
+      get "/critique-engagement/hall-of-fame.json"
+
+      entry = response.parsed_body["top_critiques"].first
+      expect(entry["username"]).to eq(top_critic.username)
+      expect(entry["url"]).to eq(critique.url)
+      expect(entry["award_count"]).to eq(1)
+      expect(entry["topic_title"]).to eq(topic.title)
+    end
+
     it "lists steward badge holders and rising critics" do
       BadgeGranter.grant(DiscourseNpnCritiqueEngagement::Badges.pillar, top_critic)
       BadgeGranter.grant(DiscourseNpnCritiqueEngagement::Badges.rising, runner_up)

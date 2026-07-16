@@ -30,6 +30,11 @@ en:
         seasons_empty: "No completed months yet."
         rising_title: "Rising critics"
         rising_empty: "No rising critics honored yet — new members, the spotlight is open."
+        top_critiques_title: "Most awarded critiques"
+        top_critiques_empty: "No awarded critiques yet — give an award reaction to a critique that earns it."
+        award_count:
+          one: "%{count} award"
+          other: "%{count} awards"
         leaderboard_link: "Current leaderboard"
       impact:
         title: "Your critique impact"

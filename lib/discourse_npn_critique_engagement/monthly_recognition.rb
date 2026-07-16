@@ -189,6 +189,7 @@ module DiscourseNpnCritiqueEngagement
           month: month,
           winners: winners_table(winners),
         )
+      raw += awarded_critiques_section(month)
       if rising_winner
         raw +=
           "\n\n" +
@@ -212,6 +213,34 @@ module DiscourseNpnCritiqueEngagement
       post.topic.update_pinned(true, false, pin_days.days.from_now.to_s) if pin_days > 0
     rescue => e
       Rails.logger.warn("NPN critique engagement: highlights topic failed: #{e.message}")
+    end
+
+    # The month's most-awarded critiques, linked so everyone can see what a
+    # great critique looks like.
+    def awarded_critiques_section(month)
+      entries =
+        AwardedCritiques.top(
+          limit: SiteSetting.npn_critique_top_critiques_count,
+          period_start: @month,
+          period_end: @month.next_month,
+        )
+      return "" if entries.empty?
+
+      lines =
+        entries.each_with_index.map do |entry, index|
+          I18n.t(
+            "npn_critique_engagement.highlights_topic.awarded_line",
+            rank: index + 1,
+            username: entry[:post].user.username,
+            topic_title: entry[:post].topic.title,
+            url: entry[:post].url,
+            count: entry[:award_count],
+          )
+        end
+
+      "\n\n## " +
+        I18n.t("npn_critique_engagement.highlights_topic.awarded_section_title", month: month) +
+        "\n\n" + lines.join("\n")
     end
 
     MEDALS = %w[🥇 🥈 🥉].freeze

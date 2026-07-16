@@ -67,6 +67,11 @@ plugins:
     default: 2.0
     type: float
 
+  npn_critique_top_critiques_count:
+    default: 10
+    min: 1
+    max: 50
+
   npn_critique_followup_multiplier:
     default: 0.3
     type: float

@@ -38,6 +38,7 @@ module DiscourseNpnCritiqueEngagement
                    pillars: badge_holders(SiteSetting.npn_critique_pillar_badge_name),
                    rising: badge_holders(SiteSetting.npn_critique_rising_badge_name),
                    seasons: monthly_winners,
+                   top_critiques: top_critiques,
                  }
         end
       end
@@ -60,6 +61,24 @@ module DiscourseNpnCritiqueEngagement
             name: user_badge.user.name,
             avatar_template: user_badge.user.avatar_template,
             granted_at: user_badge.granted_at,
+          }
+        end
+    end
+
+    # All-time most-awarded critiques, linked so the hall of fame doubles as
+    # a gallery of what a great critique looks like.
+    def top_critiques
+      AwardedCritiques
+        .top(limit: SiteSetting.npn_critique_top_critiques_count)
+        .map do |entry|
+          post = entry[:post]
+          {
+            username: post.user.username,
+            name: post.user.name,
+            avatar_template: post.user.avatar_template,
+            topic_title: post.topic.title,
+            url: post.url,
+            award_count: entry[:award_count],
           }
         end
     end
