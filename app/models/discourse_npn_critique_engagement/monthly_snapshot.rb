@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# The model can be autoloaded (e.g. during migrations) before plugin.rb's
+# after_initialize requires run, and lib/ is not on the autoload path.
+require_relative "../../../lib/discourse_npn_critique_engagement/has_tier"
+
 module DiscourseNpnCritiqueEngagement
   # A month-end bookkeeping copy of a member's rolling standing, recorded on
   # the 1st. Badges, trends, history graphs, and the health dashboard read
