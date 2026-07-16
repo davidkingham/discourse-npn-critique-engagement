@@ -1,0 +1,441 @@
+// Tier modifier classes are generated from the server-side tier keys, so they
+// keep the underscore form (e.g. .--priority_outreach).
+.npn-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: var(--font-down-1);
+
+  &.--excellent {
+    color: var(--success);
+  }
+
+  &.--healthy {
+    color: var(--tertiary);
+  }
+
+  &.--watch,
+  &.--low_activity {
+    color: var(--primary-medium);
+  }
+
+  &.--priority_outreach {
+    color: var(--danger);
+  }
+
+  &.--new_member {
+    color: var(--primary-high);
+  }
+}
+
+.npn-critique-user-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+
+  &__score {
+    font-weight: bold;
+  }
+}
+
+.npn-critique-nudge {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75em;
+  padding: 0.75em;
+  margin-block-end: 0.5em;
+  background: var(--tertiary-very-low);
+  border: 1px solid var(--tertiary-low);
+  border-radius: var(--d-border-radius);
+
+  .d-icon {
+    color: var(--tertiary);
+    margin-block-start: 0.2em;
+  }
+
+  &__message {
+    flex: 1;
+    margin: 0;
+  }
+}
+
+.npn-leaderboard,
+.npn-hall-of-fame {
+  max-width: 40em;
+
+  &__header {
+    margin-block-end: 1.5em;
+  }
+
+  &__description {
+    color: var(--primary-high);
+  }
+
+  &__member {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    overflow-wrap: anywhere;
+  }
+
+  &__empty {
+    color: var(--primary-high);
+  }
+}
+
+.npn-leaderboard {
+  &__month {
+    font-size: var(--font-up-1);
+    color: var(--primary-high);
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+
+  &__entry {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    padding: 0.5em;
+    border-block-end: 1px solid var(--primary-low);
+  }
+
+  &__rank {
+    min-width: 2ch;
+    text-align: end;
+    font-weight: bold;
+  }
+
+  &__member {
+    flex: 1;
+  }
+
+  &__weighted {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35em;
+    font-weight: bold;
+  }
+
+  &__weighted-label {
+    font-weight: normal;
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
+  }
+}
+
+.npn-hall-of-fame {
+  &__pillar-list {
+    list-style: none;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12em, 1fr));
+    gap: 1em;
+  }
+
+  &__pillar {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25em;
+  }
+
+  &__granted {
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
+  }
+
+  &__season-list {
+    list-style: none;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+
+  &__season {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    padding: 0.35em 0;
+    border-block-end: 1px solid var(--primary-low);
+  }
+
+  &__season-month {
+    min-width: 9em;
+  }
+
+  &__season-weighted {
+    margin-inline-start: auto;
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
+  }
+}
+
+.npn-impact {
+  max-width: 40em;
+
+  &__private-note {
+    color: var(--primary-high);
+    font-size: var(--font-down-1);
+  }
+
+  &__next-action {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5em;
+    padding: 0.75em;
+    background: var(--tertiary-very-low);
+    border-radius: var(--d-border-radius);
+
+    .d-icon {
+      color: var(--tertiary);
+      margin-block-start: 0.2em;
+    }
+  }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9em, 1fr));
+    gap: 1em;
+    margin: 0;
+
+    dt {
+      font-size: var(--font-down-1);
+      color: var(--primary-high);
+    }
+
+    dd {
+      margin: 0;
+      font-size: var(--font-up-1);
+      font-weight: bold;
+    }
+  }
+
+  &__badge-list {
+    list-style: none;
+    margin: 0;
+  }
+
+  &__badge-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding-block: 0.25em;
+  }
+
+  &__history-list {
+    list-style: none;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35em;
+  }
+
+  &__history-row {
+    display: grid;
+    grid-template-columns: 8em 1fr 3em auto;
+    align-items: center;
+    gap: 0.75em;
+  }
+
+  &__history-bar {
+    display: block;
+    block-size: 0.75em;
+    inline-size: calc(var(--npn-bar-scale, 0) * 100%);
+    min-inline-size: 2px;
+    background: var(--tertiary-low);
+    border-radius: 2px;
+  }
+
+  &__history-value {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__empty {
+    color: var(--primary-high);
+  }
+}
+
+.npn-tier-bar {
+  display: flex;
+  inline-size: 100%;
+  min-inline-size: 8em;
+  block-size: 1em;
+  border-radius: 2px;
+  overflow: hidden;
+
+  &__segment {
+    display: inline-block;
+    min-inline-size: 2px;
+    block-size: 1em;
+    background: var(--primary-low);
+
+    &.--excellent {
+      background: var(--success);
+    }
+
+    &.--healthy {
+      background: var(--tertiary);
+    }
+
+    &.--watch {
+      background: var(--tertiary-low-mid, var(--tertiary-low));
+    }
+
+    &.--priority_outreach {
+      background: var(--danger);
+    }
+
+    &.--low_activity {
+      background: var(--primary-low-mid);
+    }
+
+    &.--new_member {
+      background: var(--highlight);
+    }
+  }
+}
+
+.npn-admin-report {
+  &__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    margin-block-end: 1em;
+  }
+
+  &__sort {
+    background: none;
+    border: none;
+    padding: 0;
+    font-weight: bold;
+    color: var(--primary);
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--tertiary);
+    }
+  }
+
+  &__member {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+
+  &__trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+
+    &.--up {
+      color: var(--success);
+    }
+
+    &.--down {
+      color: var(--danger);
+    }
+  }
+
+  &__empty {
+    color: var(--primary-high);
+  }
+}
+
+.npn-admin-health {
+  &__legend {
+    list-style: none;
+    margin: 1em 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+  }
+
+  &__legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+
+    .npn-tier-bar__segment {
+      inline-size: 1em;
+      border-radius: 2px;
+    }
+  }
+
+  &__empty {
+    color: var(--primary-high);
+  }
+}
+
+.npn-admin-outreach {
+  &__list {
+    list-style: none;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+
+  &__row {
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius);
+    padding: 0.75em;
+  }
+
+  &__summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75em;
+  }
+
+  &__member {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+
+  &__counts,
+  &__last-contacted {
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
+  }
+
+  &__toggle {
+    margin-inline-start: auto;
+  }
+
+  &__detail {
+    margin-block-start: 0.75em;
+    padding-block-start: 0.75em;
+    border-block-start: 1px solid var(--primary-low);
+  }
+
+  &__notes {
+    list-style: none;
+    margin: 0.5em 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+
+  &__note-meta {
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
+  }
+
+  &__note-text {
+    margin: 0.15em 0 0;
+  }
+
+  &__empty {
+    color: var(--primary-high);
+  }
+}

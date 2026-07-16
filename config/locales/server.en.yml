@@ -1,0 +1,53 @@
+en:
+  site_settings:
+    npn_critique_engagement_enabled: "Enable critique engagement scoring, recognition, and moderation tools."
+    npn_critique_category: "The category whose give-and-take is scored (Image Critiques)."
+    npn_critique_min_reply_length: "Minimum characters (after stripping quoted text) for a reply to count as a critique at all."
+    npn_critique_medium_reply_length: "Characters at which a critique earns the medium multiplier."
+    npn_critique_long_reply_length: "Characters at which a critique earns the long multiplier."
+    npn_critique_medium_reply_multiplier: "Weight multiplier for medium-length critiques."
+    npn_critique_long_reply_multiplier: "Weight multiplier for long critiques."
+    npn_critique_like_bonus: "Bonus per like received on a critique."
+    npn_critique_like_bonus_cap: "Maximum like bonus a single critique can earn."
+    npn_critique_followup_multiplier: "Credit multiplier for follow-up critiques in the same thread."
+    npn_critique_followup_cap: "How many follow-up critiques per thread earn partial credit; later replies earn nothing."
+    npn_critique_target_ratio: "Threads-critiqued to topics-posted ratio at which the ratio bonus maxes out."
+    npn_critique_grace_period_days: "New members are never penalized while their account is younger than this."
+    npn_critique_grace_topic_dump_threshold: "Topics posted with zero threads critiqued at which a new member loses the grace score protection."
+    npn_critique_excellent_score: "Score at which a member reaches the Excellent tier."
+    npn_critique_healthy_score: "Score at which a member reaches the Healthy tier."
+    npn_critique_watch_floor_score: "Score below which a member drops out of the Watch tier."
+    npn_critique_outreach_min_topics: "Topics posted at which a below-floor member becomes priority outreach rather than low activity."
+    npn_critique_badges_enabled: "Grant recognition badges when a season closes."
+    npn_critique_contributor_badge_name: "Name of the monthly bronze badge for reaching Healthy."
+    npn_critique_supporter_badge_name: "Name of the monthly silver badge for reaching Excellent."
+    npn_critique_pillar_badge_name: "Name of the permanent gold badge."
+    npn_critique_pillar_required_months: "Excellent months required within the window to earn the permanent badge."
+    npn_critique_pillar_window_months: "Trailing window (months) evaluated for the permanent badge."
+    npn_critique_supporter_flair_group: "Group whose membership is replaced each season with last month's Excellent members (for flair). Plugin-managed."
+    npn_critique_pillar_flair_group: "Group permanent badge earners are added to (for flair). Plugin-managed, members are never removed."
+    npn_critique_leaderboard_size: "How many top critics the monthly leaderboard shows."
+    npn_critique_nudge_enabled: "Show a dismissible give-and-take reminder above the composer when a member below the healthy ratio starts a new topic in the critique category."
+    npn_critique_nudge_ratio: "Show the reminder when a member's threads-critiqued to topics-posted ratio is below this."
+    npn_critique_nudge_copy: "Custom reminder text. Placeholders: %%{shared}, %%{critiqued}. Leave blank for the default copy."
+    npn_critique_season_topic_enabled: "Post a pinned winners topic in the critique category when a season closes."
+    npn_critique_season_topic_author: "Username that authors the season-close topic."
+    npn_critique_season_topic_pin_days: "How many days the season-close topic stays pinned. 0 to skip pinning."
+  npn_critique_engagement:
+    badges:
+      contributor_description: "Reached Healthy critique engagement in a calendar month"
+      supporter_description: "Reached Excellent critique engagement in a calendar month"
+      pillar_description: "Sustained Excellent critique engagement over many months — the rarest honor this community gives"
+    season_topic:
+      title: "Critique season results — %{month}"
+      table_header: |-
+        | Rank | Member | Weighted critiques |
+        |---|---|---|
+      body: |
+        The %{month} critique season has closed. Thank you to everyone who gave their time and eyes to other members' work — this category runs on your generosity.
+
+        ## Top critics of %{month}
+
+        %{winners}
+
+        A fresh season starts today: the leaderboard has reset and the podium is open to everyone.

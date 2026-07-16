@@ -1,0 +1,145 @@
+plugins:
+  npn_critique_engagement_enabled:
+    default: false
+    client: true
+
+  npn_critique_category:
+    default: ""
+    type: category
+    client: true
+
+  # --- Scoring formula ---------------------------------------------------
+  # All values were tuned against live NPN data in the Data Explorer
+  # prototype; they will need tuning again. Nothing is hard-coded.
+
+  npn_critique_min_reply_length:
+    default: 100
+    min: 1
+
+  npn_critique_medium_reply_length:
+    default: 300
+    min: 1
+
+  npn_critique_long_reply_length:
+    default: 800
+    min: 1
+
+  npn_critique_medium_reply_multiplier:
+    default: 1.5
+    type: float
+
+  npn_critique_long_reply_multiplier:
+    default: 2.0
+    type: float
+
+  npn_critique_like_bonus:
+    default: 0.2
+    type: float
+
+  npn_critique_like_bonus_cap:
+    default: 1.0
+    type: float
+
+  npn_critique_followup_multiplier:
+    default: 0.3
+    type: float
+
+  npn_critique_followup_cap:
+    default: 2
+    min: 0
+
+  npn_critique_target_ratio:
+    default: 2.0
+    type: float
+
+  npn_critique_grace_period_days:
+    default: 30
+    min: 0
+
+  npn_critique_grace_topic_dump_threshold:
+    default: 3
+    min: 1
+
+  # --- Tier boundaries ----------------------------------------------------
+
+  npn_critique_excellent_score:
+    default: 400
+    min: -100000
+
+  npn_critique_healthy_score:
+    default: 100
+    min: -100000
+
+  npn_critique_watch_floor_score:
+    default: -100
+    min: -100000
+
+  npn_critique_outreach_min_topics:
+    default: 6
+    min: 1
+
+  # --- Badges & flair -----------------------------------------------------
+
+  npn_critique_badges_enabled:
+    default: false
+
+  npn_critique_contributor_badge_name:
+    default: "Contributor"
+
+  npn_critique_supporter_badge_name:
+    default: "Supporter"
+
+  npn_critique_pillar_badge_name:
+    default: "Pillar of the Community"
+
+  npn_critique_pillar_required_months:
+    default: 6
+    min: 1
+
+  npn_critique_pillar_window_months:
+    default: 12
+    min: 1
+
+  npn_critique_supporter_flair_group:
+    default: ""
+    type: group
+
+  npn_critique_pillar_flair_group:
+    default: ""
+    type: group
+
+  # --- Leaderboard ----------------------------------------------------------
+
+  npn_critique_leaderboard_size:
+    default: 10
+    min: 1
+    max: 100
+    client: true
+
+  # --- Composer nudge banner ------------------------------------------------
+
+  npn_critique_nudge_enabled:
+    default: false
+    client: true
+
+  npn_critique_nudge_ratio:
+    default: 2.0
+    type: float
+
+  npn_critique_nudge_copy:
+    default: ""
+    textarea: true
+    client: true
+
+  # --- Season close -----------------------------------------------------------
+
+  npn_critique_season_topic_enabled:
+    default: false
+
+  npn_critique_season_topic_author:
+    default: "system"
+    type: username
+
+  npn_critique_season_topic_pin_days:
+    default: 4
+    min: 0
