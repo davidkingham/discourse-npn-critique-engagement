@@ -35,6 +35,13 @@ module DiscourseNpnCritiqueEngagement
       end
     end
 
+    # GET /critique-engagement/outreach
+    # HTML shell only — the Ember route fetches its data from the staff JSON
+    # endpoints under /admin/plugins/critique-engagement.
+    def outreach
+      render html: nil, layout: true
+    end
+
     # POST /critique-engagement/editors-picks/pick
     # Applies the editors-pick tag and posts a public small-action note —
     # replacing the old manual whisper — so the pick and the picker are

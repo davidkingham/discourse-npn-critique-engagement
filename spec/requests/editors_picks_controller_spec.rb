@@ -38,6 +38,16 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
     expect(response.status).to eq(403)
   end
 
+  it "serves the outreach page shell to staff" do
+    sign_in(moderator)
+    get "/critique-engagement/outreach"
+    expect(response.status).to eq(200)
+
+    sign_in(engaged_poster)
+    get "/critique-engagement/outreach"
+    expect(response.status).to eq(403)
+  end
+
   describe "#show" do
     fab!(:engaged_topic) { make_image_topic(engaged_poster, landscape_tag) }
     fab!(:quiet_topic) { make_image_topic(quiet_poster, landscape_tag) }

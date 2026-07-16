@@ -6,6 +6,7 @@ DiscourseNpnCritiqueEngagement::Engine.routes.draw do
   get "/critique-engagement/impact" => "impact#show"
   get "/critique-engagement/editors-picks" => "editors_picks#show"
   post "/critique-engagement/editors-picks/pick" => "editors_picks#pick"
+  get "/critique-engagement/outreach" => "editors_picks#outreach"
 
   scope "/admin/plugins/critique-engagement", constraints: StaffConstraint.new do
     get "/report" => "admin/reports#index"
