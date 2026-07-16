@@ -38,14 +38,15 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
     expect(response.status).to eq(403)
   end
 
-  it "serves the outreach page shell to staff" do
+  # HTML navigations always get the app shell (check_xhr renders it before
+  # controller gates run); access control lives in the Ember route redirect
+  # and the staff-gated JSON endpoints.
+  it "serves the outreach page shell" do
     sign_in(moderator)
-    get "/critique-engagement/outreach"
-    expect(response.status).to eq(200)
 
-    sign_in(engaged_poster)
     get "/critique-engagement/outreach"
-    expect(response.status).to eq(403)
+
+    expect(response.status).to eq(200)
   end
 
   describe "#show" do
