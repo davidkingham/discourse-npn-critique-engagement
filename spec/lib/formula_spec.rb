@@ -6,8 +6,6 @@ describe DiscourseNpnCritiqueEngagement::Formula do
   fab!(:established_user) { Fabricate(:user, created_at: 3.months.ago) }
   fab!(:new_user) { Fabricate(:user, created_at: 3.days.ago) }
 
-  let(:period_start) { Time.zone.today.beginning_of_month }
-
   describe ".score" do
     it "rewards giving critiques and grows with weighted output" do
       low = described_class.score(weighted_replies: 2, created_topics: 1, topics_replied: 2)
@@ -53,7 +51,6 @@ describe DiscourseNpnCritiqueEngagement::Formula do
     def grace_protected?(user:, created_topics: 0, topics_replied: 0)
       described_class.grace_protected?(
         user: user,
-        period_start: period_start,
         created_topics: created_topics,
         topics_replied: topics_replied,
       )
@@ -75,12 +72,7 @@ describe DiscourseNpnCritiqueEngagement::Formula do
 
   describe ".tier_for" do
     def tier_for(user:, score:, created_topics: 0)
-      described_class.tier_for(
-        user: user,
-        score: score,
-        created_topics: created_topics,
-        period_start: period_start,
-      )
+      described_class.tier_for(user: user, score: score, created_topics: created_topics)
     end
 
     it "maps scores to tiers at the configured boundaries" do

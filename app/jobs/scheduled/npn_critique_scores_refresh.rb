@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Jobs
-  # Nightly refresh of the current month's critique engagement scores. Also
-  # closes any season whose month has ended: the close is keyed off
-  # unfinalized past rows, so a missed run is simply caught up the next night.
+  # Nightly refresh of the rolling critique engagement scores. Also records
+  # the monthly snapshot once a month has ended: the recording is keyed off
+  # the missing snapshot, so a missed run is simply caught up the next night.
   class NpnCritiqueScoresRefresh < ::Jobs::Scheduled
     every 1.day
 
@@ -11,7 +11,7 @@ module Jobs
       return if !SiteSetting.npn_critique_engagement_enabled
       return if SiteSetting.npn_critique_category.blank?
 
-      DiscourseNpnCritiqueEngagement::SeasonCloser.close_due
+      DiscourseNpnCritiqueEngagement::MonthlyRecognition.record_due
       DiscourseNpnCritiqueEngagement::Scorer.run
     end
   end

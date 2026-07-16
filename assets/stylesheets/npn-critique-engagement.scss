@@ -38,6 +38,29 @@
   }
 }
 
+// Rendered next to poster names (via addPosterIcons) and on the user card.
+.npn-critique-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.05em 0.5em;
+  border-radius: 1em;
+  font-size: var(--font-down-2);
+  font-weight: bold;
+  background: var(--tertiary-very-low);
+  color: var(--tertiary);
+  text-decoration: none;
+
+  .d-icon {
+    color: currentcolor;
+  }
+
+  &.--steward {
+    background: var(--success-low, var(--tertiary-very-low));
+    color: var(--success);
+  }
+}
+
 .npn-critique-nudge {
   display: flex;
   align-items: flex-start;

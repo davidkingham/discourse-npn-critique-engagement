@@ -6,11 +6,18 @@ motivation, public recognition.
 
 ## What it does
 
-- **Nightly scoring** — a scheduled job scores every member active in the
-  critique category: critiques weighted by substance (length tiers after
-  quote-stripping, capped like bonus, discounted follow-ups) balanced against
-  photos posted. One row per member per month; the current month recomputes
-  nightly, past months freeze when the season closes.
+- **Rolling nightly scoring** — a scheduled job scores every member active in
+  the critique category (and its subcategories) over the trailing window
+  (`npn_critique_window_days`, default 90): critiques weighted by substance
+  (length tiers after quote-stripping, capped like bonus, discounted
+  follow-ups) balanced against photos posted. One row per member; nothing
+  resets — contributions age out of the window naturally. On the 1st, a
+  monthly snapshot records each member's standing for badges, trends, and
+  history.
+- **Recognition chips** — currently-Excellent members ("Critique Guide") and
+  permanent-badge holders ("Critique Steward") get a labeled chip next to
+  their name on every post and on the user card. Positive signals only;
+  `npn_critique_chip_min_tier` can extend chips to Healthy members.
 - **Staff surface** — tier + score on the user card (staff only), an admin
   report with trend arrows and tier filtering, a category health dashboard,
   and an outreach queue with a shared contact log.

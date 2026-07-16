@@ -4,30 +4,39 @@ require "rails_helper"
 
 describe DiscourseNpnCritiqueEngagement::Scorer do
   fab!(:category)
-  fab!(:critic) { Fabricate(:user, created_at: 3.months.ago) }
-  fab!(:poster) { Fabricate(:user, created_at: 3.months.ago) }
-
-  let(:period_start) { Time.zone.today.beginning_of_month }
+  fab!(:critic) { Fabricate(:user, created_at: 6.months.ago) }
+  fab!(:poster) { Fabricate(:user, created_at: 6.months.ago) }
 
   before do
     SiteSetting.npn_critique_engagement_enabled = true
     SiteSetting.npn_critique_category = category.id.to_s
   end
 
-  def make_topic(user)
-    topic = Fabricate(:topic, category: category, user: user)
-    Fabricate(:post, topic: topic, user: user)
+  def make_topic(user, category: nil, created_at: nil)
+    topic =
+      Fabricate(
+        :topic,
+        category: category || self.category,
+        user: user,
+        created_at: created_at || Time.zone.now,
+      )
+    Fabricate(:post, topic: topic, user: user, created_at: topic.created_at)
     topic
   end
 
-  def reply(topic, user, length:, likes: 0, raw: nil)
+  def reply(topic, user, length:, likes: 0, raw: nil, created_at: nil)
     Fabricate(
       :post,
       topic: topic,
       user: user,
       raw: raw || ("critique " * 100)[0, length],
       like_count: likes,
+      created_at: created_at || Time.zone.now,
     )
+  end
+
+  def score_row(user)
+    DiscourseNpnCritiqueEngagement::Score.find_by(user_id: user.id)
   end
 
   it "weights critiques by length, likes, and follow-up position" do
@@ -40,9 +49,9 @@ describe DiscourseNpnCritiqueEngagement::Scorer do
     topic_two = make_topic(poster)
     reply(topic_two, critic, length: 150, likes: 10) # 1.0 + like bonus capped at 1.0
 
-    described_class.run(period_start)
+    described_class.run
 
-    row = DiscourseNpnCritiqueEngagement::Score.find_by(user_id: critic.id)
+    row = score_row(critic)
     expect(row.weighted_replies).to eq(4.05)
     expect(row.topics_replied).to eq(2)
     expect(row.created_topics).to eq(0)
@@ -67,75 +76,78 @@ describe DiscourseNpnCritiqueEngagement::Scorer do
     own_topic = make_topic(critic)
     reply(own_topic, critic, length: 300) # self-reply
 
-    described_class.run(period_start)
+    described_class.run
 
-    row = DiscourseNpnCritiqueEngagement::Score.find_by(user_id: critic.id)
+    row = score_row(critic)
     expect(row.weighted_replies).to eq(0)
     expect(row.created_topics).to eq(1)
   end
 
+  it "only counts activity inside the rolling window" do
+    old_topic = make_topic(poster, created_at: 100.days.ago)
+    reply(old_topic, critic, length: 300, created_at: 100.days.ago)
+    recent_topic = make_topic(poster)
+    reply(recent_topic, critic, length: 150)
+
+    described_class.run
+
+    row = score_row(critic)
+    expect(row.weighted_replies).to eq(1.0)
+    expect(score_row(poster).created_topics).to eq(1)
+  end
+
   it "counts activity in subcategories of the critique category" do
     subcategory = Fabricate(:category, parent_category: category)
-    topic = Fabricate(:topic, category: subcategory, user: poster)
-    Fabricate(:post, topic: topic, user: poster)
+    topic = make_topic(poster, category: subcategory)
     reply(topic, critic, length: 150)
 
-    described_class.run(period_start)
+    described_class.run
 
-    row = DiscourseNpnCritiqueEngagement::Score.find_by(user_id: critic.id)
-    expect(row.weighted_replies).to eq(1.0)
-    expect(DiscourseNpnCritiqueEngagement::Score.find_by(user_id: poster.id).created_topics).to eq(
-      1,
-    )
+    expect(score_row(critic).weighted_replies).to eq(1.0)
+    expect(score_row(poster).created_topics).to eq(1)
   end
 
   it "computes ratio and tiers members who post without reciprocating" do
     6.times { make_topic(poster) }
 
-    described_class.run(period_start)
+    described_class.run
 
-    row = DiscourseNpnCritiqueEngagement::Score.find_by(user_id: poster.id)
+    row = score_row(poster)
     expect(row.created_topics).to eq(6)
     expect(row.ratio).to eq(0)
     expect(row.tier).to eq("priority_outreach")
   end
 
-  it "leaves finalized rows untouched and removes stale unfinalized rows" do
-    inactive = Fabricate(:user, created_at: 3.months.ago)
-    finalized =
-      DiscourseNpnCritiqueEngagement::Score.create!(
-        user_id: critic.id,
-        period_start: period_start,
-        score: 999,
-        tier: :excellent,
-        finalized: true,
-        computed_at: 1.day.ago,
-      )
+  it "keeps one row per member and drops members whose window emptied" do
     stale =
       DiscourseNpnCritiqueEngagement::Score.create!(
-        user_id: inactive.id,
-        period_start: period_start,
+        user_id: Fabricate(:user).id,
         score: 5,
         tier: :watch,
-        finalized: false,
         computed_at: 1.day.ago,
       )
     topic = make_topic(poster)
     reply(topic, critic, length: 150)
 
-    described_class.run(period_start)
+    described_class.run
+    described_class.run
 
-    expect(finalized.reload.score).to eq(999)
+    expect(DiscourseNpnCritiqueEngagement::Score.where(user_id: critic.id).count).to eq(1)
     expect(DiscourseNpnCritiqueEngagement::Score.exists?(stale.id)).to eq(false)
+  end
+
+  it "records when it first produced data" do
+    make_topic(poster)
+
+    expect(described_class.first_run_at).to be_nil
+    described_class.run
+    expect(described_class.first_run_at).to be_within(1.minute).of(Time.zone.now)
   end
 
   it "does nothing when no category is configured" do
     SiteSetting.npn_critique_category = ""
     make_topic(poster)
 
-    expect { described_class.run(period_start) }.not_to change(
-      DiscourseNpnCritiqueEngagement::Score,
-      :count,
-    )
+    expect { described_class.run }.not_to change(DiscourseNpnCritiqueEngagement::Score, :count)
   end
 end

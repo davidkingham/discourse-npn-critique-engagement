@@ -4,7 +4,6 @@ import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-templa
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import NpnTierBadge from "../components/npn-tier-badge";
-import periodMonth from "../lib/period-month";
 
 function rank(index) {
   return index + 1;
@@ -17,11 +16,11 @@ export default <template>
         {{dIcon "ranking-star"}}
         {{i18n "npn_critique_engagement.leaderboard.title"}}
       </h1>
-      <p class="npn-leaderboard__month">
-        {{periodMonth @controller.model.period_start}}
-      </p>
       <p class="npn-leaderboard__description">
-        {{i18n "npn_critique_engagement.leaderboard.description"}}
+        {{i18n
+          "npn_critique_engagement.leaderboard.description"
+          count=@controller.model.window_days
+        }}
       </p>
       <LinkTo
         @route="critique-hall-of-fame"

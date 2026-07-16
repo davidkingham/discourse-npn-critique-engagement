@@ -63,8 +63,10 @@ export default <template>
 
     <section class="npn-impact__current">
       <h3>
-        {{i18n "npn_critique_engagement.impact.this_month"}}
-        ({{periodMonth @controller.model.period_start}})
+        {{i18n
+          "npn_critique_engagement.impact.window"
+          count=@controller.model.window_days
+        }}
       </h3>
       {{#if @controller.model.current}}
         <dl class="npn-impact__stats">
@@ -130,7 +132,7 @@ export default <template>
               style={{historyBarStyle row @controller.model.history}}
             >
               <span class="npn-impact__history-month">
-                {{periodMonth row.period_start}}
+                {{periodMonth row.month}}
               </span>
               <span class="npn-impact__history-bar" aria-hidden="true"></span>
               <span class="npn-impact__history-value">

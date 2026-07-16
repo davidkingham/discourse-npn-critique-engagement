@@ -13,7 +13,6 @@ module DiscourseNpnCritiqueEngagement
       def index
         rows =
           Score
-            .for_period(Score.current_period_start)
             .where(tier: :priority_outreach)
             .includes(:user)
             .order(score: :asc)

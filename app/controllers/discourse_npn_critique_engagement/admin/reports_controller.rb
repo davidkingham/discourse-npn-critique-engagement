@@ -8,88 +8,111 @@ module DiscourseNpnCritiqueEngagement
       HEALTH_MONTHS = 12
 
       # GET /admin/plugins/critique-engagement/report?period=YYYY-MM
-      # Every member scored for the month. Sorting and tier filtering happen
-      # client-side — the community is small enough to ship the whole month.
+      # No period: the live rolling standing (trend vs. the latest snapshot).
+      # With a period: that month's snapshot (trend vs. the month before).
+      # Sorting and tier filtering happen client-side — the community is
+      # small enough to ship the whole set.
       def index
-        period_start = requested_period || Score.current_period_start
+        month = requested_month
 
-        rows =
-          Score
-            .for_period(period_start)
-            .includes(:user)
-            .order(score: :desc)
-            .reject { |row| row.user.nil? }
-
-        user_ids = rows.map(&:user_id)
-        previous_scores =
-          Score
-            .for_period(period_start.prev_month)
-            .where(user_id: user_ids)
-            .pluck(:user_id, :score)
-            .to_h
+        if month
+          rows = MonthlySnapshot.for_month(month).includes(:user).order(score: :desc)
+          previous_scores = snapshot_scores(month.prev_month, rows.map(&:user_id))
+        else
+          rows = Score.includes(:user).order(score: :desc)
+          previous_scores = snapshot_scores(MonthlySnapshot.latest_month, rows.map(&:user_id))
+        end
+        rows = rows.reject { |row| row.user.nil? }
 
         render json: {
-                 period_start: period_start,
-                 periods: available_periods,
+                 window_days: SiteSetting.npn_critique_window_days,
+                 period: month,
+                 periods: available_months,
                  rows:
                    serialize_data(
                      rows,
                      ReportRowSerializer,
                      previous_scores: previous_scores,
-                     outreach_logs: OutreachLog.latest_for(user_ids),
+                     outreach_logs: OutreachLog.latest_for(rows.map(&:user_id)),
                    ),
                }
       end
 
       # GET /admin/plugins/critique-engagement/health
-      # Category health over the trailing year: tier distribution, critique
-      # volume, and median give-and-take ratio per month.
+      # Category health over time: tier distribution, critique volume, and
+      # median give-and-take ratio — the live window first, then the monthly
+      # snapshots.
       def health
+        render json: { months: [current_health] + snapshot_health }
+      end
+
+      private
+
+      def requested_month
+        return if params[:period].blank?
+
+        month = Date.strptime(params[:period], "%Y-%m").beginning_of_month
+        raise Discourse::NotFound if !MonthlySnapshot.for_month(month).exists?
+        month
+      rescue Date::Error
+        raise Discourse::InvalidParameters.new(:period)
+      end
+
+      def snapshot_scores(month, user_ids)
+        return {} if month.nil?
+        MonthlySnapshot.for_month(month).where(user_id: user_ids).pluck(:user_id, :score).to_h
+      end
+
+      def available_months
+        MonthlySnapshot.distinct.order(snapshot_month: :desc).pluck(:snapshot_month)
+      end
+
+      def current_health
+        {
+          current: true,
+          members: Score.count,
+          total_weighted_replies: Score.sum(:weighted_replies).to_f.round(1),
+          median_ratio: median_ratio_of(Score),
+          tiers: tier_counts_of(Score.group(:tier).count),
+        }
+      end
+
+      def snapshot_health
         aggregates =
-          Score
-            .group(:period_start)
-            .order(period_start: :desc)
+          MonthlySnapshot
+            .group(:snapshot_month)
+            .order(snapshot_month: :desc)
             .limit(HEALTH_MONTHS)
             .pluck(
-              :period_start,
+              :snapshot_month,
               Arel.sql("COUNT(*)"),
               Arel.sql("SUM(weighted_replies)"),
               Arel.sql("PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ratio)"),
             )
 
         tier_counts =
-          Score.where(period_start: aggregates.map(&:first)).group(:period_start, :tier).count
+          MonthlySnapshot
+            .where(snapshot_month: aggregates.map(&:first))
+            .group(:snapshot_month, :tier)
+            .count
 
-        render json: {
-                 months:
-                   aggregates.map do |period_start, members, total_weighted, median_ratio|
-                     {
-                       period_start: period_start,
-                       members: members,
-                       total_weighted_replies: total_weighted.to_f.round(1),
-                       median_ratio: median_ratio.to_f.round(2),
-                       tiers:
-                         Score.tiers.keys.index_with do |tier|
-                           tier_counts[[period_start, tier]] || 0
-                         end,
-                     }
-                   end,
-               }
+        aggregates.map do |month, members, total_weighted, median_ratio|
+          {
+            month: month,
+            members: members,
+            total_weighted_replies: total_weighted.to_f.round(1),
+            median_ratio: median_ratio.to_f.round(2),
+            tiers: HasTier::TIERS.keys.index_with { |tier| tier_counts[[month, tier.to_s]] || 0 },
+          }
+        end
       end
 
-      private
-
-      def requested_period
-        return if params[:period].blank?
-
-        period = Date.strptime(params[:period], "%Y-%m")
-        period.beginning_of_month
-      rescue Date::Error
-        raise Discourse::InvalidParameters.new(:period)
+      def median_ratio_of(scope)
+        scope.pick(Arel.sql("PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ratio)")).to_f.round(2)
       end
 
-      def available_periods
-        Score.distinct.order(period_start: :desc).pluck(:period_start)
+      def tier_counts_of(counts)
+        HasTier::TIERS.keys.index_with { |tier| counts[tier.to_s] || 0 }
       end
     end
   end

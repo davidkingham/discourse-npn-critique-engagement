@@ -74,8 +74,8 @@ module DiscourseNpnCritiqueEngagement
     # Tier follows the prototype exactly: members inside the grace window are
     # always labeled new_member (judge gently; welcome them) — topic-dumping
     # only removes the score protection, never the label.
-    def self.tier_for(user:, score:, created_topics:, period_start:)
-      return :new_member if in_grace_period?(user, period_start)
+    def self.tier_for(user:, score:, created_topics:)
+      return :new_member if in_grace_period?(user)
 
       if score >= SiteSetting.npn_critique_excellent_score
         :excellent
@@ -92,18 +92,14 @@ module DiscourseNpnCritiqueEngagement
 
     # Whether the member scores on the protected curve: inside the grace
     # window and not immediately topic-dumping.
-    def self.grace_protected?(user:, period_start:, created_topics:, topics_replied:)
-      in_grace_period?(user, period_start) &&
+    def self.grace_protected?(user:, created_topics:, topics_replied:)
+      in_grace_period?(user) &&
         !topic_dump?(created_topics: created_topics, topics_replied: topics_replied)
     end
 
-    # The prototype measures account age at query time; anchoring the running
-    # month to "now" matches it, while a season close (just after the month
-    # ends) anchors to the period end.
-    def self.in_grace_period?(user, period_start)
-      period_end = period_start.to_date.next_month.beginning_of_month.in_time_zone
-      reference = [Time.zone.now, period_end].min
-      user.created_at > reference - SiteSetting.npn_critique_grace_period_days.days
+    # Account age at scoring time, exactly like the prototype.
+    def self.in_grace_period?(user)
+      user.created_at > Time.zone.now - SiteSetting.npn_critique_grace_period_days.days
     end
 
     def self.topic_dump?(created_topics:, topics_replied:)

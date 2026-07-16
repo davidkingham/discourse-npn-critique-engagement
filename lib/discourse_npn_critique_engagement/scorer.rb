@@ -1,22 +1,24 @@
 # frozen_string_literal: true
 
 module DiscourseNpnCritiqueEngagement
-  # Computes one month of critique engagement aggregates for every member who
-  # was active in the critique category, scores them through Formula, and
-  # upserts the results into npn_critique_scores. Finalized (season-closed)
-  # rows are never touched.
+  # Computes trailing-window engagement aggregates for every member who was
+  # active in the critique category, scores them through Formula, and upserts
+  # one rolling row per member. Runs nightly; contributions age out of the
+  # window naturally, so nothing ever resets.
   class Scorer
+    FIRST_RUN_KEY = "first_run_at"
+
     # Strips [quote]...[/quote] blocks before measuring length, so quoting a
     # wall of text earns nothing. The prototype's pattern, single-quoted so
     # the backslashes reach Postgres intact; passed as a bind param rather
     # than interpolated.
     QUOTE_PATTERN = '\[quote.*?\[/quote\]'
 
-    # Per-member monthly aggregates, ported from the Data Explorer prototype:
-    # replies weighted by substance (length tiers after quote-stripping, a
-    # capped like bonus, discounted follow-up replies) against topics posted.
-    # The critique category is scoped with its subcategories. Deleted posts,
-    # whispers, and self-replies never count.
+    # Per-member trailing-window aggregates, ported from the Data Explorer
+    # prototype: replies weighted by substance (length tiers after
+    # quote-stripping, a capped like bonus, discounted follow-up replies)
+    # against topics posted. The critique category is scoped with its
+    # subcategories. Deleted posts, whispers, and self-replies never count.
     AGGREGATES_SQL = <<~SQL
       WITH critique_categories AS (
         SELECT id FROM categories
@@ -39,8 +41,8 @@ module DiscourseNpnCritiqueEngagement
           AND p.post_number > 1
           AND p.user_id > 0
           AND p.user_id <> t.user_id
-          AND p.created_at >= :period_start
-          AND p.created_at < :period_end
+          AND p.created_at >= :window_start
+          AND p.created_at < :window_end
       ),
       substantive AS (
         SELECT
@@ -76,8 +78,8 @@ module DiscourseNpnCritiqueEngagement
           AND t.archetype = 'regular'
           AND t.deleted_at IS NULL
           AND t.user_id > 0
-          AND t.created_at >= :period_start
-          AND t.created_at < :period_end
+          AND t.created_at >= :window_start
+          AND t.created_at < :window_end
         GROUP BY t.user_id
       )
       SELECT
@@ -89,16 +91,23 @@ module DiscourseNpnCritiqueEngagement
       FULL OUTER JOIN creations ON creations.user_id = replies.user_id
     SQL
 
-    def self.run(period_start = Score.current_period_start)
-      new(period_start).run
+    def self.run
+      new.run
     end
 
-    def initialize(period_start)
-      @period_start = period_start.to_date.beginning_of_month
+    # When the plugin first produced data — MonthlyRecognition uses this to
+    # avoid recording snapshots for months the plugin wasn't watching.
+    def self.first_run_at
+      value = PluginStore.get(PLUGIN_NAME, FIRST_RUN_KEY)
+      value && Time.zone.parse(value)
     end
 
     def run
       return if category_id.blank?
+
+      if self.class.first_run_at.nil?
+        PluginStore.set(PLUGIN_NAME, FIRST_RUN_KEY, Time.zone.now.iso8601)
+      end
 
       rows = aggregates
       users = User.real.where(id: rows.map(&:user_id)).index_by(&:id)
@@ -112,7 +121,6 @@ module DiscourseNpnCritiqueEngagement
           grace =
             Formula.grace_protected?(
               user: user,
-              period_start: @period_start,
               created_topics: row.created_topics,
               topics_replied: row.topics_replied,
             )
@@ -123,17 +131,9 @@ module DiscourseNpnCritiqueEngagement
               topics_replied: row.topics_replied,
               grace: grace,
             )
-          tier =
-            Formula.tier_for(
-              user: user,
-              score: score,
-              created_topics: row.created_topics,
-              period_start: @period_start,
-            )
+          tier = Formula.tier_for(user: user, score: score, created_topics: row.created_topics)
 
-          record = Score.find_or_initialize_by(user_id: row.user_id, period_start: @period_start)
-          next if record.finalized?
-
+          record = Score.find_or_initialize_by(user_id: row.user_id)
           record.update!(
             score: score,
             tier: tier,
@@ -149,14 +149,12 @@ module DiscourseNpnCritiqueEngagement
           )
         end
 
-        # A member's activity can disappear mid-month (posts deleted); their
-        # stale row must go with it.
-        Score
-          .for_period(@period_start)
-          .where(finalized: false)
-          .where.not(user_id: rows.map(&:user_id))
-          .delete_all
+        # Members whose window emptied (activity aged out or was deleted)
+        # drop off entirely.
+        Score.where.not(user_id: rows.map(&:user_id)).delete_all
       end
+
+      Recognition.rebuild!
     end
 
     private
@@ -166,8 +164,8 @@ module DiscourseNpnCritiqueEngagement
         AGGREGATES_SQL,
         quote_pattern: QUOTE_PATTERN,
         category_id: category_id,
-        period_start: @period_start,
-        period_end: @period_start.next_month,
+        window_start: SiteSetting.npn_critique_window_days.days.ago,
+        window_end: Time.zone.now,
         min_length: SiteSetting.npn_critique_min_reply_length,
         medium_length: SiteSetting.npn_critique_medium_reply_length,
         long_length: SiteSetting.npn_critique_long_reply_length,

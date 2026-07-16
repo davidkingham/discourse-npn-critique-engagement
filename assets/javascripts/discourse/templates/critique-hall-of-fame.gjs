@@ -61,7 +61,7 @@ export default <template>
           {{#each @controller.model.seasons as |season|}}
             <li class="npn-hall-of-fame__season">
               <span class="npn-hall-of-fame__season-month">
-                {{periodMonth season.period_start}}
+                {{periodMonth season.month}}
               </span>
               <a
                 class="npn-hall-of-fame__member"

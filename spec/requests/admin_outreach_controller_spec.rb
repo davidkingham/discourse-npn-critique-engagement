@@ -7,14 +7,11 @@ describe DiscourseNpnCritiqueEngagement::Admin::OutreachController do
   fab!(:member, :user)
   fab!(:healthy_member, :user)
 
-  let(:period_start) { Time.zone.today.beginning_of_month }
-
   before do
     SiteSetting.npn_critique_engagement_enabled = true
 
     DiscourseNpnCritiqueEngagement::Score.create!(
       user_id: member.id,
-      period_start: period_start,
       score: -250,
       tier: :priority_outreach,
       created_topics: 8,
@@ -22,7 +19,6 @@ describe DiscourseNpnCritiqueEngagement::Admin::OutreachController do
     )
     DiscourseNpnCritiqueEngagement::Score.create!(
       user_id: healthy_member.id,
-      period_start: period_start,
       score: 150,
       tier: :healthy,
       computed_at: Time.zone.now,

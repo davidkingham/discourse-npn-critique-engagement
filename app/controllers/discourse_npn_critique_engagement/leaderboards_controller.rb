@@ -5,16 +5,15 @@ module DiscourseNpnCritiqueEngagement
     requires_plugin DiscourseNpnCritiqueEngagement::PLUGIN_NAME
 
     # GET /critique-engagement/leaderboard
-    # The current month's top critics, ranked by weighted critique count.
-    # Resets on the 1st so the podium stays reachable.
+    # The most generous critics of the trailing window, ranked by weighted
+    # critique count. Continuously rolling — standing ages out naturally, so
+    # the podium stays reachable without ever resetting.
     def show
       respond_to do |format|
         format.html { render html: nil, layout: true }
         format.json do
-          period_start = Score.current_period_start
           entries =
             Score
-              .for_period(period_start)
               .where("weighted_replies > 0")
               .order(weighted_replies: :desc, score: :desc)
               .limit(SiteSetting.npn_critique_leaderboard_size)
@@ -22,7 +21,7 @@ module DiscourseNpnCritiqueEngagement
               .reject { |row| row.user.nil? }
 
           render json: {
-                   period_start: period_start,
+                   window_days: SiteSetting.npn_critique_window_days,
                    entries: serialize_data(entries, LeaderboardEntrySerializer),
                  }
         end
@@ -30,11 +29,11 @@ module DiscourseNpnCritiqueEngagement
     end
 
     # GET /critique-engagement/hall-of-fame
-    # Every Pillar of the Community, plus each finalized season's winner.
+    # Every Critique Steward, plus each month's top critic from the snapshots.
     def hall_of_fame
       respond_to do |format|
         format.html { render html: nil, layout: true }
-        format.json { render json: { pillars: pillars, seasons: season_winners } }
+        format.json { render json: { pillars: pillars, seasons: monthly_winners } }
       end
     end
 
@@ -59,27 +58,27 @@ module DiscourseNpnCritiqueEngagement
         end
     end
 
-    def season_winners
+    def monthly_winners
       winner_ids = DB.query_single(<<~SQL)
-        SELECT DISTINCT ON (period_start) id
-        FROM npn_critique_scores
-        WHERE finalized AND weighted_replies > 0
-        ORDER BY period_start DESC, weighted_replies DESC, score DESC
+        SELECT DISTINCT ON (snapshot_month) id
+        FROM npn_critique_monthly_snapshots
+        WHERE weighted_replies > 0
+        ORDER BY snapshot_month DESC, weighted_replies DESC, score DESC
       SQL
 
-      Score
+      MonthlySnapshot
         .where(id: winner_ids)
         .includes(:user)
-        .order(period_start: :desc)
-        .reject { |row| row.user.nil? }
-        .map do |row|
+        .order(snapshot_month: :desc)
+        .reject { |snapshot| snapshot.user.nil? }
+        .map do |snapshot|
           {
-            period_start: row.period_start,
-            username: row.user.username,
-            name: row.user.name,
-            avatar_template: row.user.avatar_template,
-            tier: row.public_tier,
-            weighted_replies: row.weighted_replies.round(1),
+            month: snapshot.snapshot_month,
+            username: snapshot.user.username,
+            name: snapshot.user.name,
+            avatar_template: snapshot.user.avatar_template,
+            tier: snapshot.public_tier,
+            weighted_replies: snapshot.weighted_replies.round(1),
           }
         end
     end

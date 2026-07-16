@@ -1,7 +1,8 @@
 en:
   site_settings:
     npn_critique_engagement_enabled: "Enable critique engagement scoring, recognition, and moderation tools."
-    npn_critique_category: "The category whose give-and-take is scored (Image Critiques)."
+    npn_critique_category: "The category whose give-and-take is scored, together with its subcategories (Image Critiques)."
+    npn_critique_window_days: "The rolling scoring window: standing always reflects the trailing this-many days, recomputed nightly. Tier boundaries were tuned on 90 days."
     npn_critique_min_reply_length: "Minimum characters (after stripping quoted text) for a reply to count as a critique at all."
     npn_critique_medium_reply_length: "Characters at which a critique earns the medium multiplier."
     npn_critique_long_reply_length: "Characters at which a critique earns the long multiplier."
@@ -26,28 +27,30 @@ en:
     npn_critique_pillar_window_months: "Trailing window (months) evaluated for the permanent badge."
     npn_critique_supporter_flair_group: "Group whose membership is replaced each season with last month's Excellent members (for flair). Plugin-managed."
     npn_critique_pillar_flair_group: "Group permanent badge earners are added to (for flair). Plugin-managed, members are never removed."
-    npn_critique_leaderboard_size: "How many top critics the monthly leaderboard shows."
+    npn_critique_chips_enabled: "Show public recognition chips next to poster names and on the user card."
+    npn_critique_chip_min_tier: "Lowest tier that earns a recognition chip. 'excellent' shows chips for Guides and Stewards only; 'healthy' also marks Contributors."
+    npn_critique_leaderboard_size: "How many top critics the leaderboard and monthly highlights topic show."
     npn_critique_nudge_enabled: "Show a dismissible give-and-take reminder above the composer when a member below the healthy ratio starts a new topic in the critique category."
     npn_critique_nudge_ratio: "Show the reminder when a member's threads-critiqued to topics-posted ratio is below this."
     npn_critique_nudge_copy: "Custom reminder text. Placeholders: %%{shared}, %%{critiqued}. Leave blank for the default copy."
-    npn_critique_season_topic_enabled: "Post a pinned winners topic in the critique category when a season closes."
-    npn_critique_season_topic_author: "Username that authors the season-close topic."
-    npn_critique_season_topic_pin_days: "How many days the season-close topic stays pinned. 0 to skip pinning."
+    npn_critique_season_topic_enabled: "Post a pinned monthly highlights topic in the critique category naming the month's top critics."
+    npn_critique_season_topic_author: "Username that authors the monthly highlights topic."
+    npn_critique_season_topic_pin_days: "How many days the monthly highlights topic stays pinned. 0 to skip pinning."
   npn_critique_engagement:
     badges:
       contributor_description: "Reached Healthy critique engagement in a calendar month"
       supporter_description: "Reached Excellent critique engagement in a calendar month"
       pillar_description: "Sustained Excellent critique engagement over many months — the rarest honor this community gives"
-    season_topic:
-      title: "Critique season results — %{month}"
+    highlights_topic:
+      title: "Critique highlights — %{month}"
       table_header: |-
         | Rank | Member | Weighted critiques |
         |---|---|---|
       body: |
-        The %{month} critique season has closed. Thank you to everyone who gave their time and eyes to other members' work — this category runs on your generosity.
+        Thank you to everyone who gave their time and eyes to other members' work in %{month} — this category runs on your generosity.
 
         ## Top critics of %{month}
 
         %{winners}
 
-        A fresh season starts today: the leaderboard has reset and the podium is open to everyone.
+        Every substantive critique counts, whenever you give it — visit a few threads and join the conversation.

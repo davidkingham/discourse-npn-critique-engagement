@@ -100,13 +100,22 @@ export default class NpnAdminReport extends Component {
     this.tierFilter = tier;
   }
 
+  get selectedPeriod() {
+    return this.data.period ?? "current";
+  }
+
   @action
   async changePeriod(period) {
     this.loading = true;
     try {
       this.dataOverride = await ajax(
         "/admin/plugins/critique-engagement/report",
-        { data: period ? { period: period.slice(0, 7) } : {} }
+        {
+          data:
+            period && period !== "current"
+              ? { period: period.slice(0, 7) }
+              : {},
+        }
       );
     } catch (error) {
       popupAjaxError(error);
@@ -126,12 +135,18 @@ export default class NpnAdminReport extends Component {
 
       <div class="npn-admin-report__filters">
         <DSelect
-          @value={{this.data.period_start}}
+          @value={{this.selectedPeriod}}
           @onChange={{this.changePeriod}}
           @includeNone={{false}}
           class="npn-admin-report__period"
           as |select|
         >
+          <select.Option @value="current">
+            {{i18n
+              "npn_critique_engagement.admin.report.current_period"
+              count=this.data.window_days
+            }}
+          </select.Option>
           {{#each this.data.periods as |period|}}
             <select.Option @value={{period}}>
               {{periodMonth period}}
@@ -189,9 +204,6 @@ export default class NpnAdminReport extends Component {
                   </button>
                 </th>
               {{/each}}
-              <th class="d-table__cell --detail">
-                {{i18n "npn_critique_engagement.admin.report.finalized"}}
-              </th>
             </tr>
           </thead>
           <tbody class="d-table__body">
@@ -253,12 +265,6 @@ export default class NpnAdminReport extends Component {
                     {{i18n "npn_critique_engagement.admin.report.ratio"}}
                   </div>
                   {{row.ratio}}
-                </td>
-                <td class="d-table__cell --detail">
-                  <div class="d-table__mobile-label">
-                    {{i18n "npn_critique_engagement.admin.report.finalized"}}
-                  </div>
-                  {{#if row.finalized}}{{dIcon "check"}}{{/if}}
                 </td>
               </tr>
             {{/each}}

@@ -57,7 +57,11 @@ export default <template>
             <tr class="d-table__row">
               <td class="d-table__cell --overview">
                 <span class="d-table__overview-name">
-                  {{periodMonth month.period_start}}
+                  {{#if month.current}}
+                    {{i18n "npn_critique_engagement.admin.health.current"}}
+                  {{else}}
+                    {{periodMonth month.month}}
+                  {{/if}}
                 </span>
               </td>
               <td class="d-table__cell --detail">

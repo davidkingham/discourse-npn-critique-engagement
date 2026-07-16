@@ -6,7 +6,6 @@ def create_npn_score(member, attributes = {})
   DiscourseNpnCritiqueEngagement::Score.create!(
     {
       user_id: member.id,
-      period_start: Time.zone.today.beginning_of_month,
       score: -150,
       tier: :watch,
       created_topics: 6,

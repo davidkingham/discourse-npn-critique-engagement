@@ -7,20 +7,27 @@ describe DiscourseNpnCritiqueEngagement::LeaderboardsController do
   fab!(:runner_up, :user)
   fab!(:struggling_member, :user)
 
-  let(:period_start) { Time.zone.today.beginning_of_month }
-
   before { SiteSetting.npn_critique_engagement_enabled = true }
 
-  def create_score(user, weighted:, tier:, period: period_start, finalized: false)
+  def create_score(user, weighted:, tier:)
     DiscourseNpnCritiqueEngagement::Score.create!(
       user_id: user.id,
-      period_start: period,
       score: weighted * 100,
       tier: tier,
       weighted_replies: weighted,
       topics_replied: weighted.round,
       computed_at: Time.zone.now,
-      finalized: finalized,
+    )
+  end
+
+  def create_snapshot(user, month:, weighted:, tier: :excellent)
+    DiscourseNpnCritiqueEngagement::MonthlySnapshot.create!(
+      user_id: user.id,
+      snapshot_month: month,
+      score: weighted * 100,
+      tier: tier,
+      weighted_replies: weighted,
+      computed_at: Time.zone.now,
     )
   end
 
@@ -31,10 +38,11 @@ describe DiscourseNpnCritiqueEngagement::LeaderboardsController do
       create_score(struggling_member, weighted: 1.1, tier: :watch)
     end
 
-    it "ranks the month's critics by weighted count without exposing raw scores" do
+    it "ranks the window's critics by weighted count without exposing raw scores" do
       get "/critique-engagement/leaderboard.json"
 
       expect(response.status).to eq(200)
+      expect(response.parsed_body["window_days"]).to eq(SiteSetting.npn_critique_window_days)
       entries = response.parsed_body["entries"]
       expect(entries.map { |entry| entry["username"] }).to eq(
         [top_critic.username, runner_up.username, struggling_member.username],
@@ -68,29 +76,12 @@ describe DiscourseNpnCritiqueEngagement::LeaderboardsController do
   end
 
   describe "#hall_of_fame" do
-    it "lists each finalized season's winner" do
-      create_score(
-        top_critic,
-        weighted: 9.0,
-        tier: :excellent,
-        period: 2.months.ago.beginning_of_month,
-        finalized: true,
-      )
-      create_score(
-        runner_up,
-        weighted: 4.0,
-        tier: :healthy,
-        period: 2.months.ago.beginning_of_month,
-        finalized: true,
-      )
-      create_score(
-        runner_up,
-        weighted: 7.0,
-        tier: :excellent,
-        period: 1.month.ago.beginning_of_month,
-        finalized: true,
-      )
-      create_score(struggling_member, weighted: 20.0, tier: :excellent) # current month: not finalized
+    it "lists each snapshot month's winner" do
+      two_months_ago = 2.months.ago.beginning_of_month.to_date
+      last_month = 1.month.ago.beginning_of_month.to_date
+      create_snapshot(top_critic, month: two_months_ago, weighted: 9.0)
+      create_snapshot(runner_up, month: two_months_ago, weighted: 4.0, tier: :healthy)
+      create_snapshot(runner_up, month: last_month, weighted: 7.0)
 
       get "/critique-engagement/hall-of-fame.json"
 
@@ -101,7 +92,7 @@ describe DiscourseNpnCritiqueEngagement::LeaderboardsController do
       )
     end
 
-    it "lists pillar badge holders" do
+    it "lists steward badge holders" do
       badge = DiscourseNpnCritiqueEngagement::Badges.pillar
       BadgeGranter.grant(badge, top_critic)
 

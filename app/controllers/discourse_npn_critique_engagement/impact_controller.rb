@@ -11,19 +11,17 @@ module DiscourseNpnCritiqueEngagement
 
     # GET /critique-engagement/impact
     def show
-      period_start = Score.current_period_start
       current = Score.current_for(current_user)
       history =
-        Score
+        MonthlySnapshot
           .where(user_id: current_user.id)
-          .where("period_start < ?", period_start)
-          .order(period_start: :desc)
+          .order(snapshot_month: :desc)
           .limit(HISTORY_MONTHS)
 
       render json: {
-               period_start: period_start,
+               window_days: SiteSetting.npn_critique_window_days,
                current: current && ImpactRowSerializer.new(current, root: false).as_json,
-               history: serialize_data(history, ImpactRowSerializer),
+               history: serialize_data(history, SnapshotRowSerializer),
                next_action: next_action(current),
                badge_progress: badge_progress(current),
              }
@@ -59,13 +57,12 @@ module DiscourseNpnCritiqueEngagement
 
     def badge_progress(row)
       window_start =
-        Score.current_period_start - (SiteSetting.npn_critique_pillar_window_months - 1).months
+        Date.current.beginning_of_month - SiteSetting.npn_critique_pillar_window_months.months
 
       excellent_months =
-        Score
-          .finalized
+        MonthlySnapshot
           .where(user_id: current_user.id, tier: :excellent)
-          .where("period_start >= ?", window_start)
+          .where("snapshot_month >= ?", window_start)
           .count
 
       {

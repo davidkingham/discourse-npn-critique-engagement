@@ -15,7 +15,6 @@ module DiscourseNpnCritiqueEngagement
                :weighted_replies,
                :ratio,
                :trend,
-               :finalized,
                :last_outreach
 
     def username

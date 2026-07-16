@@ -3,9 +3,7 @@
 require "rails_helper"
 
 describe DiscourseNpnCritiqueEngagement::ImpactController do
-  fab!(:member) { Fabricate(:user, created_at: 3.months.ago) }
-
-  let(:period_start) { Time.zone.today.beginning_of_month }
+  fab!(:member) { Fabricate(:user, created_at: 6.months.ago) }
 
   before { SiteSetting.npn_critique_engagement_enabled = true }
 
@@ -13,7 +11,6 @@ describe DiscourseNpnCritiqueEngagement::ImpactController do
     DiscourseNpnCritiqueEngagement::Score.create!(
       {
         user_id: member.id,
-        period_start: period_start,
         score: 150,
         tier: :healthy,
         weighted_replies: 4.0,
@@ -25,25 +22,41 @@ describe DiscourseNpnCritiqueEngagement::ImpactController do
     )
   end
 
+  def create_snapshot(month, attributes = {})
+    DiscourseNpnCritiqueEngagement::MonthlySnapshot.create!(
+      {
+        user_id: member.id,
+        snapshot_month: month,
+        score: 150,
+        tier: :healthy,
+        weighted_replies: 4.0,
+        computed_at: Time.zone.now,
+      }.merge(attributes),
+    )
+  end
+
   it "requires login" do
     get "/critique-engagement/impact.json"
 
     expect(response.status).to eq(403)
   end
 
-  it "returns the member's own standing without the raw score" do
+  it "returns the member's own standing and history without the raw score" do
     create_score
-    create_score(period_start: 1.month.ago.beginning_of_month, tier: :watch, finalized: true)
+    create_snapshot(1.month.ago.beginning_of_month.to_date, tier: :watch)
     sign_in(member)
 
     get "/critique-engagement/impact.json"
 
     expect(response.status).to eq(200)
+    expect(response.parsed_body["window_days"]).to eq(SiteSetting.npn_critique_window_days)
     current = response.parsed_body["current"]
     expect(current["tier"]).to eq("healthy")
     expect(current["weighted_replies"]).to eq(4.0)
     expect(current.keys).not_to include("score")
-    expect(response.parsed_body["history"].length).to eq(1)
+    history = response.parsed_body["history"]
+    expect(history.length).to eq(1)
+    expect(history.first["month"]).to eq(1.month.ago.beginning_of_month.to_date.to_s)
   end
 
   it "suggests a concrete next action toward the next tier" do
@@ -67,7 +80,7 @@ describe DiscourseNpnCritiqueEngagement::ImpactController do
     expect(response.parsed_body["next_action"]["type"]).to eq("at_top")
   end
 
-  it "suggests starting when there is no activity yet" do
+  it "suggests starting when there is no activity in the window" do
     sign_in(member)
 
     get "/critique-engagement/impact.json"
@@ -76,9 +89,9 @@ describe DiscourseNpnCritiqueEngagement::ImpactController do
     expect(response.parsed_body["current"]).to be_nil
   end
 
-  it "reports pillar badge progress from finalized history" do
-    create_score(period_start: 1.month.ago.beginning_of_month, tier: :excellent, finalized: true)
-    create_score(period_start: 2.months.ago.beginning_of_month, tier: :excellent, finalized: true)
+  it "reports steward badge progress from snapshot history" do
+    create_snapshot(1.month.ago.beginning_of_month.to_date, tier: :excellent)
+    create_snapshot(2.months.ago.beginning_of_month.to_date, tier: :excellent)
     sign_in(member)
 
     get "/critique-engagement/impact.json"
