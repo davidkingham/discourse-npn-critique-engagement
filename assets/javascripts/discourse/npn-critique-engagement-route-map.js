@@ -8,4 +8,7 @@ export default function () {
   this.route("critique-editors-picks", {
     path: "/critique-engagement/editors-picks",
   });
+  this.route("critique-outreach", {
+    path: "/critique-engagement/outreach",
+  });
 }

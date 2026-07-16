@@ -24,11 +24,6 @@ export default {
           route: "adminPlugins.show.discourse-npn-critique-engagement-health",
           description: "npn_critique_engagement.admin.health.nav_description",
         },
-        {
-          label: "npn_critique_engagement.admin.outreach.nav_label",
-          route: "adminPlugins.show.discourse-npn-critique-engagement-outreach",
-          description: "npn_critique_engagement.admin.outreach.nav_description",
-        },
       ]);
     });
   },

@@ -93,7 +93,7 @@ const OutreachRow = <template>
   </li>
 </template>;
 
-export default class NpnAdminOutreach extends Component {
+export default class NpnCritiqueOutreach extends Component {
   @service toasts;
 
   @tracked rowsOverride = null;
