@@ -28,6 +28,7 @@ end
 # Table name: npn_critique_monthly_snapshots
 #
 #  id               :bigint           not null, primary key
+#  awards_received  :integer          default(0), not null
 #  computed_at      :datetime         not null
 #  created_topics   :integer          default(0), not null
 #  ratio            :float            default(0.0), not null

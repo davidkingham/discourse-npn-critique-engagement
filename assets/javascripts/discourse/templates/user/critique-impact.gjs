@@ -87,6 +87,10 @@ export default <template>
             <dd>{{@controller.model.current.created_topics}}</dd>
           </div>
           <div class="npn-impact__stat">
+            <dt>{{i18n "npn_critique_engagement.impact.awards_label"}}</dt>
+            <dd>{{@controller.model.current.awards_received}}</dd>
+          </div>
+          <div class="npn-impact__stat">
             <dt>{{i18n "npn_critique_engagement.impact.ratio_label"}}</dt>
             <dd>{{@controller.model.current.ratio}}</dd>
           </div>

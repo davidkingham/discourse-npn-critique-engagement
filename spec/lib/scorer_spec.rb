@@ -107,6 +107,76 @@ describe DiscourseNpnCritiqueEngagement::Scorer do
     expect(score_row(poster).created_topics).to eq(1)
   end
 
+  describe "award reactions" do
+    fab!(:voter) { Fabricate(:user, created_at: 6.months.ago) }
+
+    def give_award(post, user, reaction_value)
+      reaction =
+        DiscourseReactions::Reaction.find_or_create_by!(
+          post_id: post.id,
+          reaction_value: reaction_value,
+          reaction_type: :emoji,
+        )
+      DiscourseReactions::ReactionUser.create!(
+        reaction_id: reaction.id,
+        user_id: user.id,
+        post_id: post.id,
+      )
+    end
+
+    it "adds an award bonus, weighting the topic owner's award double" do
+      topic = make_topic(poster)
+      awarded = reply(topic, critic, length: 150)
+      give_award(awarded, poster, "award-helped-my-work") # topic owner: 0.5 × 2
+      give_award(awarded, voter, "award-critique") # 0.5
+
+      described_class.run
+
+      row = score_row(critic)
+      expect(row.weighted_replies).to eq(2.5) # 1.0 base + 1.5 award bonus
+      expect(row.awards_received).to eq(2)
+    end
+
+    it "caps the total award bonus per critique and counts legacy names" do
+      topic = make_topic(poster)
+      awarded = reply(topic, critic, length: 150)
+      # Reactions allow one per member per post, so the cap is reached via
+      # awards from distinct members.
+      give_award(awarded, voter, "star2") # legacy name still counts
+      3.times { give_award(awarded, Fabricate(:user), "award-critique") }
+
+      described_class.run
+
+      row = score_row(critic)
+      expect(row.weighted_replies).to eq(2.5) # 4 × 0.5 = 2.0, capped at 1.5
+      expect(row.awards_received).to eq(4)
+    end
+
+    it "ignores self-awards and non-award reactions" do
+      topic = make_topic(poster)
+      awarded = reply(topic, critic, length: 150)
+      give_award(awarded, critic, "award-critique") # self-award
+      give_award(awarded, voter, "clap") # not an award
+
+      described_class.run
+
+      row = score_row(critic)
+      expect(row.weighted_replies).to eq(1.0)
+      expect(row.awards_received).to eq(0)
+    end
+
+    it "is inert when the award reaction list is emptied" do
+      SiteSetting.npn_critique_award_reactions = ""
+      topic = make_topic(poster)
+      awarded = reply(topic, critic, length: 150)
+      give_award(awarded, voter, "award-critique")
+
+      described_class.run
+
+      expect(score_row(critic).weighted_replies).to eq(1.0)
+    end
+  end
+
   it "computes ratio and tiers members who post without reciprocating" do
     6.times { make_topic(poster) }
 

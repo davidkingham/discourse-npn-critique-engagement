@@ -42,6 +42,7 @@ en:
         weighted_label: "Weighted critiques"
         critiqued_label: "Threads critiqued"
         shared_label: "Photos shared"
+        awards_label: "Awards received"
         ratio_label: "Give-and-take ratio"
         no_activity: "No critique activity in the current window — a great time to visit a few threads."
         next_action:
@@ -81,6 +82,7 @@ en:
           shared: "Photos shared"
           critiqued: "Threads critiqued"
           weighted: "Weighted critiques"
+          awards: "Awards"
           ratio: "Ratio"
           empty: "No scores yet — scores compute nightly."
           no_results: "No members match this filter."

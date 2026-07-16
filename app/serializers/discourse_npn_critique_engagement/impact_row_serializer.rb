@@ -5,7 +5,7 @@ module DiscourseNpnCritiqueEngagement
   # out even here — members see tiers and counts, nothing precise enough to
   # grind against.
   class ImpactRowSerializer < ApplicationSerializer
-    attributes :tier, :weighted_replies, :created_topics, :topics_replied, :ratio
+    attributes :tier, :weighted_replies, :created_topics, :topics_replied, :awards_received, :ratio
 
     def weighted_replies
       object.weighted_replies.round(1)

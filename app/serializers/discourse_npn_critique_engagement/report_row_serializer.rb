@@ -13,6 +13,7 @@ module DiscourseNpnCritiqueEngagement
                :created_topics,
                :topics_replied,
                :weighted_replies,
+               :awards_received,
                :ratio,
                :trend,
                :last_outreach

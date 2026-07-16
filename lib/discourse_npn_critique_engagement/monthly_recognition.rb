@@ -50,6 +50,7 @@ module DiscourseNpnCritiqueEngagement
             created_topics: row.created_topics,
             topics_replied: row.topics_replied,
             weighted_replies: row.weighted_replies,
+            awards_received: row.awards_received,
             ratio: row.ratio,
             computed_at: row.computed_at,
           )

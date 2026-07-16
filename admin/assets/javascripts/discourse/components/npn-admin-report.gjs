@@ -30,6 +30,7 @@ const SORTABLE_COLUMNS = [
   { field: "created_topics", labelKey: "shared" },
   { field: "topics_replied", labelKey: "critiqued" },
   { field: "weighted_replies", labelKey: "weighted" },
+  { field: "awards_received", labelKey: "awards" },
   { field: "ratio", labelKey: "ratio" },
 ];
 
@@ -259,6 +260,12 @@ export default class NpnAdminReport extends Component {
                     {{i18n "npn_critique_engagement.admin.report.weighted"}}
                   </div>
                   {{row.weighted_replies}}
+                </td>
+                <td class="d-table__cell --detail">
+                  <div class="d-table__mobile-label">
+                    {{i18n "npn_critique_engagement.admin.report.awards"}}
+                  </div>
+                  {{row.awards_received}}
                 </td>
                 <td class="d-table__cell --detail">
                   <div class="d-table__mobile-label">

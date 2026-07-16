@@ -48,6 +48,25 @@ plugins:
     default: 1.0
     type: float
 
+  # Award reactions (from discourse-reactions) are deliberate quality
+  # endorsements and outweigh plain likes. Legacy names are kept so awards
+  # given before the custom emojis existed still count.
+  npn_critique_award_reactions:
+    default: "award-thoughtful|award-processing|award-critique|award-helped-my-work|star2|control_knobs|trophy"
+    type: list
+
+  npn_critique_award_bonus:
+    default: 0.5
+    type: float
+
+  npn_critique_award_bonus_cap:
+    default: 1.5
+    type: float
+
+  npn_critique_owner_award_multiplier:
+    default: 2.0
+    type: float
+
   npn_critique_followup_multiplier:
     default: 0.3
     type: float

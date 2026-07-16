@@ -21,7 +21,13 @@ motivation, public recognition.
 - **Rising Critic** (`npn_critique_rising_enabled`) — each month, the most
   generous new-member critic earns a one-time badge, a distinctly styled
   spotlight chip for the following month, a mention in the highlights topic,
-  and a permanent place on the hall of fame. Quiet months award nobody.
+  a congratulations PM, and a permanent place on the hall of fame. Quiet
+  months award nobody.
+- **Award reactions** — reactions listed in `npn_critique_award_reactions`
+  (from discourse-reactions) add a capped bonus to the critique they land on,
+  with extra weight when the award comes from the topic owner. Awards
+  received show on the private impact panel and the admin report. Degrades
+  gracefully when discourse-reactions is not installed.
 - **Staff surface** — tier + score on the user card (staff only), an admin
   report with trend arrows and tier filtering, a category health dashboard,
   and an outreach queue with a shared contact log.

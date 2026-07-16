@@ -14,83 +14,6 @@ module DiscourseNpnCritiqueEngagement
     # than interpolated.
     QUOTE_PATTERN = '\[quote.*?\[/quote\]'
 
-    # Per-member trailing-window aggregates, ported from the Data Explorer
-    # prototype: replies weighted by substance (length tiers after
-    # quote-stripping, a capped like bonus, discounted follow-up replies)
-    # against topics posted. The critique category is scoped with its
-    # subcategories. Deleted posts, whispers, and self-replies never count.
-    AGGREGATES_SQL = <<~SQL
-      WITH critique_categories AS (
-        SELECT id FROM categories
-        WHERE id = :category_id OR parent_category_id = :category_id
-      ),
-      period_posts AS (
-        SELECT
-          p.user_id,
-          p.topic_id,
-          p.post_number,
-          p.like_count,
-          LENGTH(REGEXP_REPLACE(p.raw, :quote_pattern, '', 'gi')) AS effective_length
-        FROM posts p
-        JOIN topics t ON t.id = p.topic_id
-        WHERE t.category_id IN (SELECT id FROM critique_categories)
-          AND t.archetype = 'regular'
-          AND t.deleted_at IS NULL
-          AND p.deleted_at IS NULL
-          AND p.post_type = 1
-          AND p.post_number > 1
-          AND p.user_id > 0
-          AND p.user_id <> t.user_id
-          AND p.created_at >= :window_start
-          AND p.created_at < :window_end
-      ),
-      substantive AS (
-        SELECT
-          user_id,
-          topic_id,
-          CASE
-            WHEN effective_length >= :long_length THEN :long_multiplier
-            WHEN effective_length >= :medium_length THEN :medium_multiplier
-            ELSE 1.0
-          END + LEAST(like_count * :like_bonus, :like_bonus_cap) AS reply_value,
-          ROW_NUMBER() OVER (PARTITION BY user_id, topic_id ORDER BY post_number) AS reply_rank
-        FROM period_posts
-        WHERE effective_length >= :min_length
-      ),
-      replies AS (
-        SELECT
-          user_id,
-          SUM(
-            CASE
-              WHEN reply_rank = 1 THEN reply_value
-              WHEN reply_rank <= 1 + :followup_cap THEN reply_value * :followup_multiplier
-              ELSE 0
-            END
-          ) AS weighted_replies,
-          COUNT(DISTINCT topic_id) AS topics_replied
-        FROM substantive
-        GROUP BY user_id
-      ),
-      creations AS (
-        SELECT t.user_id, COUNT(*) AS created_topics
-        FROM topics t
-        WHERE t.category_id IN (SELECT id FROM critique_categories)
-          AND t.archetype = 'regular'
-          AND t.deleted_at IS NULL
-          AND t.user_id > 0
-          AND t.created_at >= :window_start
-          AND t.created_at < :window_end
-        GROUP BY t.user_id
-      )
-      SELECT
-        COALESCE(replies.user_id, creations.user_id) AS user_id,
-        COALESCE(replies.weighted_replies, 0) AS weighted_replies,
-        COALESCE(replies.topics_replied, 0) AS topics_replied,
-        COALESCE(creations.created_topics, 0) AS created_topics
-      FROM replies
-      FULL OUTER JOIN creations ON creations.user_id = replies.user_id
-    SQL
-
     def self.run
       new.run
     end
@@ -140,6 +63,7 @@ module DiscourseNpnCritiqueEngagement
             created_topics: row.created_topics,
             topics_replied: row.topics_replied,
             weighted_replies: row.weighted_replies.round(2),
+            awards_received: row.awards_received,
             ratio:
               Formula.ratio(
                 created_topics: row.created_topics,
@@ -159,9 +83,157 @@ module DiscourseNpnCritiqueEngagement
 
     private
 
+    # Per-member trailing-window aggregates, ported from the Data Explorer
+    # prototype: replies weighted by substance (length tiers after
+    # quote-stripping, a capped like bonus, a capped award-reaction bonus, and
+    # discounted follow-up replies) against topics posted. The critique
+    # category is scoped with its subcategories. Deleted posts, whispers, and
+    # self-replies never count.
+    #
+    # The award fragments are assembled conditionally so the query works when
+    # discourse-reactions is absent. Every fragment is a trusted constant —
+    # all runtime values still travel as bind params.
+    def aggregates_sql
+      <<~SQL
+        WITH critique_categories AS (
+          SELECT id FROM categories
+          WHERE id = :category_id OR parent_category_id = :category_id
+        ),
+        period_posts AS (
+          SELECT
+            p.id,
+            p.user_id,
+            p.topic_id,
+            t.user_id AS topic_user_id,
+            p.post_number,
+            p.like_count,
+            LENGTH(REGEXP_REPLACE(p.raw, :quote_pattern, '', 'gi')) AS effective_length
+          FROM posts p
+          JOIN topics t ON t.id = p.topic_id
+          WHERE t.category_id IN (SELECT id FROM critique_categories)
+            AND t.archetype = 'regular'
+            AND t.deleted_at IS NULL
+            AND p.deleted_at IS NULL
+            AND p.post_type = 1
+            AND p.post_number > 1
+            AND p.user_id > 0
+            AND p.user_id <> t.user_id
+            AND p.created_at >= :window_start
+            AND p.created_at < :window_end
+        )#{awards_cte},
+        substantive AS (
+          SELECT
+            period_posts.user_id,
+            period_posts.topic_id,
+            CASE
+              WHEN period_posts.effective_length >= :long_length THEN :long_multiplier
+              WHEN period_posts.effective_length >= :medium_length THEN :medium_multiplier
+              ELSE 1.0
+            END
+            + LEAST(period_posts.like_count * :like_bonus, :like_bonus_cap)
+            #{awards_value_fragment} AS reply_value,
+            #{awards_count_fragment} AS award_count,
+            ROW_NUMBER() OVER (
+              PARTITION BY period_posts.user_id, period_posts.topic_id
+              ORDER BY period_posts.post_number
+            ) AS reply_rank
+          FROM period_posts
+          #{awards_join_fragment}
+          WHERE period_posts.effective_length >= :min_length
+        ),
+        replies AS (
+          SELECT
+            user_id,
+            SUM(
+              CASE
+                WHEN reply_rank = 1 THEN reply_value
+                WHEN reply_rank <= 1 + :followup_cap THEN reply_value * :followup_multiplier
+                ELSE 0
+              END
+            ) AS weighted_replies,
+            COUNT(DISTINCT topic_id) AS topics_replied,
+            SUM(award_count) AS awards_received
+          FROM substantive
+          GROUP BY user_id
+        ),
+        creations AS (
+          SELECT t.user_id, COUNT(*) AS created_topics
+          FROM topics t
+          WHERE t.category_id IN (SELECT id FROM critique_categories)
+            AND t.archetype = 'regular'
+            AND t.deleted_at IS NULL
+            AND t.user_id > 0
+            AND t.created_at >= :window_start
+            AND t.created_at < :window_end
+          GROUP BY t.user_id
+        )
+        SELECT
+          COALESCE(replies.user_id, creations.user_id) AS user_id,
+          COALESCE(replies.weighted_replies, 0) AS weighted_replies,
+          COALESCE(replies.topics_replied, 0) AS topics_replied,
+          COALESCE(replies.awards_received, 0) AS awards_received,
+          COALESCE(creations.created_topics, 0) AS created_topics
+        FROM replies
+        FULL OUTER JOIN creations ON creations.user_id = replies.user_id
+      SQL
+    end
+
+    # Award reactions on a critique, capped per reply. An award from the
+    # topic owner — the person the critique was written for — carries extra
+    # weight: "this helped my work" is the strongest signal there is.
+    def awards_cte
+      return "" if !awards_enabled?
+
+      ",\n" + <<~SQL.chomp
+        post_awards AS (
+          SELECT
+            period_posts.id AS post_id,
+            LEAST(
+              SUM(
+                CASE
+                  WHEN ru.user_id = period_posts.topic_user_id
+                  THEN :award_bonus * :owner_award_multiplier
+                  ELSE :award_bonus
+                END
+              ),
+              :award_bonus_cap
+            ) AS award_bonus,
+            COUNT(*) AS award_count
+          FROM period_posts
+          JOIN discourse_reactions_reactions rr
+            ON rr.post_id = period_posts.id AND rr.reaction_value IN (:award_reactions)
+          JOIN discourse_reactions_reaction_users ru
+            ON ru.reaction_id = rr.id AND ru.user_id <> period_posts.user_id
+          GROUP BY period_posts.id
+        )
+      SQL
+    end
+
+    def awards_value_fragment
+      awards_enabled? ? "+ COALESCE(post_awards.award_bonus, 0)" : ""
+    end
+
+    def awards_count_fragment
+      awards_enabled? ? "COALESCE(post_awards.award_count, 0)" : "0"
+    end
+
+    def awards_join_fragment
+      awards_enabled? ? "LEFT JOIN post_awards ON post_awards.post_id = period_posts.id" : ""
+    end
+
+    def awards_enabled?
+      return @awards_enabled if defined?(@awards_enabled)
+      @awards_enabled =
+        award_reactions.present? &&
+          ActiveRecord::Base.connection.table_exists?("discourse_reactions_reactions")
+    end
+
+    def award_reactions
+      SiteSetting.npn_critique_award_reactions.to_s.split("|")
+    end
+
     def aggregates
-      DB.query(
-        AGGREGATES_SQL,
+      params = {
         quote_pattern: QUOTE_PATTERN,
         category_id: category_id,
         window_start: SiteSetting.npn_critique_window_days.days.ago,
@@ -175,7 +247,15 @@ module DiscourseNpnCritiqueEngagement
         like_bonus_cap: SiteSetting.npn_critique_like_bonus_cap,
         followup_multiplier: SiteSetting.npn_critique_followup_multiplier,
         followup_cap: SiteSetting.npn_critique_followup_cap,
-      )
+      }
+      if awards_enabled?
+        params[:award_reactions] = award_reactions
+        params[:award_bonus] = SiteSetting.npn_critique_award_bonus
+        params[:award_bonus_cap] = SiteSetting.npn_critique_award_bonus_cap
+        params[:owner_award_multiplier] = SiteSetting.npn_critique_owner_award_multiplier
+      end
+
+      DB.query(aggregates_sql, params)
     end
 
     def category_id
