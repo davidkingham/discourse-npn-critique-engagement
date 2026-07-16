@@ -15,6 +15,7 @@ en:
     npn_critique_award_bonus_cap: "Maximum total award bonus a single critique can earn."
     npn_critique_owner_award_multiplier: "Multiplier when the award comes from the topic owner — the member whose work was critiqued."
     npn_critique_top_critiques_count: "How many most-awarded critiques the monthly highlights topic and the hall of fame showcase."
+    npn_critique_editors_pick_tag: "The tag the editors' pick review queue applies when staff make a pick."
     npn_critique_followup_multiplier: "Credit multiplier for follow-up critiques in the same thread."
     npn_critique_followup_cap: "How many follow-up critiques per thread earn partial credit; later replies earn nothing."
     npn_critique_target_ratio: "Threads-critiqued to topics-posted ratio at which the ratio bonus maxes out."
@@ -55,6 +56,8 @@ en:
 
         Thank you for diving straight in. Keep sharing your eye — members who critique regularly get more feedback on their own work, too.
   npn_critique_engagement:
+    editors_picks:
+      already_picked: "This topic is already an editors' pick."
     badges:
       contributor_description: "Reached Healthy critique engagement in a calendar month"
       supporter_description: "Reached Excellent critique engagement in a calendar month"

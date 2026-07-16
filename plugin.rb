@@ -21,6 +21,8 @@ register_svg_icon "hand-holding-heart"
 register_svg_icon "eye"
 register_svg_icon "moon"
 register_svg_icon "seedling"
+register_svg_icon "star"
+register_svg_icon "image"
 
 module ::DiscourseNpnCritiqueEngagement
   PLUGIN_NAME = "discourse-npn-critique-engagement"
@@ -46,6 +48,7 @@ after_initialize do
   require_relative "app/serializers/discourse_npn_critique_engagement/report_row_serializer"
   require_relative "app/controllers/discourse_npn_critique_engagement/leaderboards_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/impact_controller"
+  require_relative "app/controllers/discourse_npn_critique_engagement/editors_picks_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/admin/reports_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/admin/outreach_controller"
   require_relative "app/jobs/scheduled/npn_critique_scores_refresh"

@@ -1,5 +1,7 @@
 en:
   js:
+    action_codes:
+      npn_editors_pick: "selected this as an Editor's Pick %{when}"
     npn_critique_engagement:
       title: "Critique engagement"
       tiers:
@@ -68,6 +70,19 @@ en:
       nudge:
         copy: "You've shared %{shared} photos and critiqued %{critiqued} recently. Image Critiques runs on give-and-take — consider visiting a few threads first. Members who critique regularly get more feedback on their own work."
         dismiss: "Dismiss reminder"
+      editors_picks:
+        title: "Editors' pick review"
+        description: "This week's images with each poster's give-and-take standing. Staff only."
+        week_of: "Week of %{date}"
+        previous_week: "Previous week"
+        next_week: "Next week"
+        all_tags: "All tags"
+        no_images: "No images posted this week for this selection."
+        pick: "Pick"
+        picked_by: "Picked by @%{username}"
+        confirm_pick: "Tag this as an Editor's Pick and post a public note on the topic?"
+        no_standing: "No recent standing"
+        posted: "Posted"
       admin:
         report:
           nav_label: "Report"

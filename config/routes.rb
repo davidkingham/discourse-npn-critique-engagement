@@ -4,6 +4,8 @@ DiscourseNpnCritiqueEngagement::Engine.routes.draw do
   get "/critique-engagement/leaderboard" => "leaderboards#show"
   get "/critique-engagement/hall-of-fame" => "leaderboards#hall_of_fame"
   get "/critique-engagement/impact" => "impact#show"
+  get "/critique-engagement/editors-picks" => "editors_picks#show"
+  post "/critique-engagement/editors-picks/pick" => "editors_picks#pick"
 
   scope "/admin/plugins/critique-engagement", constraints: StaffConstraint.new do
     get "/report" => "admin/reports#index"
