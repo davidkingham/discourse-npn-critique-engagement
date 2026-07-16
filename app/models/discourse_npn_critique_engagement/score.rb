@@ -51,18 +51,18 @@ end
 # Table name: npn_critique_scores
 #
 #  id               :bigint           not null, primary key
-#  user_id          :integer          not null
-#  period_start     :date             not null
-#  score            :float            default(0.0), not null
-#  tier             :integer          default(0), not null
+#  computed_at      :datetime         not null
 #  created_topics   :integer          default(0), not null
+#  finalized        :boolean          default(FALSE), not null
+#  period_start     :date             not null
+#  ratio            :float            default(0.0), not null
+#  score            :float            default(0.0), not null
+#  tier             :integer          default("new_member"), not null
 #  topics_replied   :integer          default(0), not null
 #  weighted_replies :float            default(0.0), not null
-#  ratio            :float            default(0.0), not null
-#  finalized        :boolean          default(FALSE), not null
-#  computed_at      :datetime         not null
 #  created_at       :datetime         not null
 #  updated_at       :datetime         not null
+#  user_id          :integer          not null
 #
 # Indexes
 #
