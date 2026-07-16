@@ -33,6 +33,28 @@ describe DiscourseNpnCritiqueEngagement::Admin::OutreachController do
     expect(response.status).to eq(404)
   end
 
+  it "lists promising new members to welcome, separate from the outreach queue" do
+    newbie = Fabricate(:user)
+    DiscourseNpnCritiqueEngagement::Score.create!(
+      user_id: newbie.id,
+      score: 40,
+      tier: :new_member,
+      weighted_replies: 2.5,
+      topics_replied: 3,
+      computed_at: Time.zone.now,
+    )
+    sign_in(moderator)
+
+    get "/admin/plugins/critique-engagement/outreach.json"
+
+    expect(response.parsed_body["welcome_rows"].map { |row| row["username"] }).to contain_exactly(
+      newbie.username,
+    )
+    expect(response.parsed_body["rows"].map { |row| row["username"] }).to contain_exactly(
+      member.username,
+    )
+  end
+
   it "queues only priority-outreach members with their last contact" do
     DiscourseNpnCritiqueEngagement::OutreachLog.create!(
       user: member,

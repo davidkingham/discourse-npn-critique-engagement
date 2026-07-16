@@ -174,6 +174,53 @@ describe DiscourseNpnCritiqueEngagement::MonthlyRecognition do
     end
   end
 
+  describe "award badges" do
+    before { SiteSetting.npn_critique_award_badges_enabled = true }
+
+    def give_award_at(post, user, reaction_value, at)
+      reaction =
+        DiscourseReactions::Reaction.find_or_create_by!(
+          post_id: post.id,
+          reaction_value: reaction_value,
+          reaction_type: :emoji,
+        )
+      DiscourseReactions::ReactionUser.create!(
+        reaction_id: reaction.id,
+        user_id: user.id,
+        post_id: post.id,
+        created_at: at,
+      )
+    end
+
+    it "grants post-tied badges for comments awarded during the month" do
+      awarded_post = Post.where(user_id: star_critic.id).order(:id).first
+      give_award_at(awarded_post, poster, "award-critique", last_month + 5.days)
+
+      described_class.record_due
+
+      badge = Badge.find_by(name: "Valuable Critique")
+      user_badge = UserBadge.find_by(badge: badge, user: star_critic)
+      expect(user_badge.post_id).to eq(awarded_post.id)
+    end
+
+    it "ignores awards outside the month or below the reaction threshold" do
+      posts = Post.where(user_id: star_critic.id).order(:id).to_a
+      give_award_at(posts.first, poster, "award-critique", Time.zone.now) # current month
+      SiteSetting.npn_critique_award_badge_min_reactions = 2
+      give_award_at(posts.second, poster, "award-thoughtful", last_month + 5.days) # 1 < 2
+
+      described_class.record_due
+
+      expect(
+        UserBadge.joins(:badge).where(
+          badges: {
+            name: ["Valuable Critique", "Thoughtful Response"],
+          },
+        ),
+      ).to be_empty
+    end
+  end
+
   it "showcases the month's most awarded critiques in the highlights topic" do
     in_month = last_month + 10.days
     awarded_topic = Fabricate(:topic, category: category, user: poster, created_at: in_month)

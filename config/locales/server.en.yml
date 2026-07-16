@@ -16,6 +16,11 @@ en:
     npn_critique_owner_award_multiplier: "Multiplier when the award comes from the topic owner — the member whose work was critiqued."
     npn_critique_top_critiques_count: "How many most-awarded critiques the monthly highlights topic and the hall of fame showcase."
     npn_critique_editors_pick_tag: "The tag the editors' pick review queue applies when staff make a pick."
+    npn_critique_editors_pick_badge_name: "Badge granted to the photographer when their image is picked, tied to the image post. Leave blank to skip."
+    npn_critique_editors_pick_pm_enabled: "Send the photographer a congratulations PM when their image is picked."
+    npn_critique_award_badges_enabled: "Each month, grant post-tied badges for comments that received award reactions during the month."
+    npn_critique_award_badge_map: "Which badge each award reaction earns, as reaction=badge name pairs."
+    npn_critique_award_badge_min_reactions: "Award reactions a comment needs in a month to earn its badge."
     npn_critique_followup_multiplier: "Credit multiplier for follow-up critiques in the same thread."
     npn_critique_followup_cap: "How many follow-up critiques per thread earn partial credit; later replies earn nothing."
     npn_critique_target_ratio: "Threads-critiqued to topics-posted ratio at which the ratio bonus maxes out."
@@ -47,6 +52,14 @@ en:
     npn_critique_season_topic_author: "Username that authors the monthly highlights topic."
     npn_critique_season_topic_pin_days: "How many days the monthly highlights topic stays pinned. 0 to skip pinning."
   system_messages:
+    npn_editors_pick:
+      subject_template: "Your image was selected as an Editor's Pick!"
+      text_body_template: |
+        Congratulations, @%{username}! :star:
+
+        Your image [%{topic_title}](%{topic_url}) was selected as an Editor's Pick — one of the images our moderators felt stood above the rest. It now carries the editors-pick tag, and the Editor's Pick badge has been added to your profile.
+
+        Thank you for sharing your work with the community. We'd love to see more of it — and remember, the critique threads are where the real magic happens.
     npn_rising_critic:
       subject_template: "You're our Rising Critic of the month!"
       text_body_template: |
@@ -63,6 +76,8 @@ en:
       supporter_description: "Reached Excellent critique engagement in a calendar month"
       pillar_description: "Sustained Excellent critique engagement over many months — the rarest honor this community gives"
       rising_description: "Dove straight into give-and-take as a new member: the month's most generous new critic"
+      editors_pick_description: "Image selected as an Editor's Pick by the moderators"
+      award_badge_description: "Received a community award for an exceptional contribution"
     highlights_topic:
       title: "Critique highlights — %{month}"
       table_header: |-

@@ -48,7 +48,40 @@ module DiscourseNpnCritiqueEngagement
       )
     end
 
-    def self.ensure_badge(name, badge_type_id:, multiple_grant:, icon:, description_key:)
+    # Post-tied and repeatable: the badge page becomes a gallery of every
+    # picked image.
+    def self.editors_pick
+      ensure_badge(
+        SiteSetting.npn_critique_editors_pick_badge_name,
+        badge_type_id: GOLD,
+        multiple_grant: true,
+        icon: "star",
+        description_key: "editors_pick_description",
+        show_posts: true,
+      )
+    end
+
+    # One badge per award-reaction kind (names come from the map setting),
+    # post-tied so each badge page collects the community's best comments.
+    def self.award_badge(name)
+      ensure_badge(
+        name,
+        badge_type_id: BRONZE,
+        multiple_grant: true,
+        icon: "medal",
+        description_key: "award_badge_description",
+        show_posts: true,
+      )
+    end
+
+    def self.ensure_badge(
+      name,
+      badge_type_id:,
+      multiple_grant:,
+      icon:,
+      description_key:,
+      show_posts: false
+    )
       Badge.find_by(name: name) ||
         Badge.create!(
           name: name,
@@ -58,7 +91,7 @@ module DiscourseNpnCritiqueEngagement
           description: I18n.t("npn_critique_engagement.badges.#{description_key}"),
           badge_grouping_id: BadgeGrouping::Community,
           listable: true,
-          show_posts: false,
+          show_posts: show_posts,
           system: false,
         )
     end

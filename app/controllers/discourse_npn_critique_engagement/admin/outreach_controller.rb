@@ -9,7 +9,12 @@ module DiscourseNpnCritiqueEngagement
 
       NOTES_LIMIT = 20
 
+      WELCOME_LIMIT = 20
+
       # GET /admin/plugins/critique-engagement/outreach
+      # Two queues, opposite valences: members to nudge (posting without
+      # giving) and new members to welcome (already giving — a personal hello
+      # goes a long way).
       def index
         rows =
           Score
@@ -18,13 +23,21 @@ module DiscourseNpnCritiqueEngagement
             .order(score: :asc)
             .reject { |row| row.user.nil? }
 
+        welcome_rows =
+          Score
+            .where(tier: :new_member)
+            .where("weighted_replies > 0")
+            .includes(:user)
+            .order(weighted_replies: :desc)
+            .limit(WELCOME_LIMIT)
+            .reject { |row| row.user.nil? }
+
+        outreach_logs = OutreachLog.latest_for((rows + welcome_rows).map(&:user_id))
+
         render json: {
-                 rows:
-                   serialize_data(
-                     rows,
-                     ReportRowSerializer,
-                     outreach_logs: OutreachLog.latest_for(rows.map(&:user_id)),
-                   ),
+                 rows: serialize_data(rows, ReportRowSerializer, outreach_logs: outreach_logs),
+                 welcome_rows:
+                   serialize_data(welcome_rows, ReportRowSerializer, outreach_logs: outreach_logs),
                }
       end
 

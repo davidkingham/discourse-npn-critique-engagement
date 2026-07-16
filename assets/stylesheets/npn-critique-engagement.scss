@@ -604,6 +604,15 @@
     margin: 0.15em 0 0;
   }
 
+  &__welcome {
+    margin-block-start: 1.5em;
+  }
+
+  &__welcome-description {
+    color: var(--primary-high);
+    font-size: var(--font-down-1);
+  }
+
   &__empty {
     color: var(--primary-high);
   }

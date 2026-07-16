@@ -29,6 +29,7 @@ module DiscourseNpnCritiqueEngagement
     def record
       snapshots = record_snapshots
       grant_badges(snapshots)
+      grant_award_badges
       rising_winner = award_rising_critic(snapshots)
       sync_flair_groups(snapshots)
       create_highlights_topic(snapshots, rising_winner)
@@ -84,6 +85,73 @@ module DiscourseNpnCritiqueEngagement
           )
         end
       end
+    end
+
+    # Fulfills the standing promise from the 2023 reactions announcement:
+    # comments that received award reactions during the month earn the
+    # matching post-tied badge, so the badge pages become galleries of the
+    # community's best contributions — with zero manual review.
+    def grant_award_badges
+      return if !SiteSetting.npn_critique_award_badges_enabled
+      return if !ActiveRecord::Base.connection.table_exists?("discourse_reactions_reactions")
+
+      map = award_badge_map
+      return if map.empty?
+
+      rows =
+        DB.query(
+          <<~SQL,
+            SELECT rr.post_id, rr.reaction_value, COUNT(ru.id) AS reactions
+            FROM discourse_reactions_reactions rr
+            JOIN discourse_reactions_reaction_users ru ON ru.reaction_id = rr.id
+            JOIN posts p ON p.id = rr.post_id
+            JOIN topics t ON t.id = p.topic_id
+            WHERE rr.reaction_value IN (:reactions)
+              AND ru.created_at >= :month_start
+              AND ru.created_at < :month_end
+              AND ru.user_id <> p.user_id
+              AND p.deleted_at IS NULL
+              AND t.deleted_at IS NULL
+              AND p.user_id > 0
+            GROUP BY rr.post_id, rr.reaction_value
+            HAVING COUNT(ru.id) >= :min_reactions
+          SQL
+          reactions: map.keys,
+          month_start: @month,
+          month_end: @month.next_month,
+          min_reactions: SiteSetting.npn_critique_award_badge_min_reactions,
+        )
+
+      posts = Post.where(id: rows.map(&:post_id)).includes(:user).index_by(&:id)
+
+      rows.each do |row|
+        post = posts[row.post_id]
+        next if post.nil? || post.user.nil?
+
+        begin
+          BadgeGranter.grant(
+            Badges.award_badge(map[row.reaction_value]),
+            post.user,
+            post_id: post.id,
+          )
+        rescue => e
+          Rails.logger.warn(
+            "NPN critique engagement: award badge failed for post #{row.post_id}: #{e.message}",
+          )
+        end
+      end
+    end
+
+    def award_badge_map
+      SiteSetting
+        .npn_critique_award_badge_map
+        .to_s
+        .split("|")
+        .filter_map do |pair|
+          reaction, badge = pair.split("=", 2)
+          [reaction.strip, badge.strip] if reaction.present? && badge.present?
+        end
+        .to_h
     end
 
     # The month's most generous new critic: youngest-account members only,

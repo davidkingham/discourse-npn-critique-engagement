@@ -101,6 +101,36 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       expect(response.parsed_body["tags"]).not_to include("editors-pick")
     end
 
+    it "grants the post-tied Editor's Pick badge and sends a congratulations PM" do
+      post "/critique-engagement/editors-picks/pick.json", params: { topic_id: topic.id }
+
+      badge = Badge.find_by(name: SiteSetting.npn_critique_editors_pick_badge_name)
+      user_badge = UserBadge.find_by(badge: badge, user: engaged_poster)
+      expect(user_badge.post_id).to eq(topic.first_post.id)
+      expect(user_badge.granted_by_id).to eq(moderator.id)
+
+      pm =
+        Topic
+          .private_messages
+          .joins(:topic_allowed_users)
+          .where(topic_allowed_users: { user_id: engaged_poster.id })
+          .order(created_at: :desc)
+          .first
+      expect(pm).to be_present
+      expect(pm.first_post.raw).to include(topic.title)
+    end
+
+    it "skips the badge and PM when disabled" do
+      SiteSetting.npn_critique_editors_pick_badge_name = ""
+      SiteSetting.npn_critique_editors_pick_pm_enabled = false
+
+      post "/critique-engagement/editors-picks/pick.json", params: { topic_id: topic.id }
+
+      expect(response.status).to eq(200)
+      expect(UserBadge.count).to eq(0)
+      expect(Topic.private_messages.count).to eq(0)
+    end
+
     it "rejects picking twice" do
       post "/critique-engagement/editors-picks/pick.json", params: { topic_id: topic.id }
       post "/critique-engagement/editors-picks/pick.json", params: { topic_id: topic.id }

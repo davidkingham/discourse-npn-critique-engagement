@@ -59,6 +59,8 @@ module DiscourseNpnCritiqueEngagement
         post_type: Post.types[:small_action],
         action_code: PICK_ACTION_CODE,
       )
+      grant_pick_badge(topic)
+      send_pick_pm(topic)
 
       render json: {
                picked: true,
@@ -70,6 +72,37 @@ module DiscourseNpnCritiqueEngagement
     end
 
     private
+
+    # The badge honors the photographer, not just the post — granted by the
+    # picking moderator and tied to the image, so the badge page becomes a
+    # gallery of every pick.
+    def grant_pick_badge(topic)
+      return if SiteSetting.npn_critique_editors_pick_badge_name.blank?
+      return if topic.user.nil?
+
+      BadgeGranter.grant(
+        Badges.editors_pick,
+        topic.user,
+        granted_by: current_user,
+        post_id: topic.first_post&.id,
+      )
+    rescue => e
+      Rails.logger.warn("NPN critique engagement: editors pick badge failed: #{e.message}")
+    end
+
+    def send_pick_pm(topic)
+      return if !SiteSetting.npn_critique_editors_pick_pm_enabled
+      return if topic.user.nil?
+
+      SystemMessage.create_from_system_user(
+        topic.user,
+        :npn_editors_pick,
+        topic_title: topic.title,
+        topic_url: topic.url,
+      )
+    rescue => e
+      Rails.logger.warn("NPN critique engagement: editors pick PM failed: #{e.message}")
+    end
 
     def ensure_staff
       raise Discourse::InvalidAccess.new if !current_user&.staff?

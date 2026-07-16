@@ -167,6 +167,25 @@ plugins:
     default: "editors-pick"
     type: tag_list
 
+  npn_critique_editors_pick_badge_name:
+    default: "Editor's Pick"
+
+  npn_critique_editors_pick_pm_enabled:
+    default: true
+
+  # --- Award badges (post-tied, granted monthly from award reactions) ---------
+
+  npn_critique_award_badges_enabled:
+    default: false
+
+  npn_critique_award_badge_map:
+    default: "award-thoughtful=Thoughtful Response|award-processing=Valuable Processing Tip|award-critique=Valuable Critique|award-helped-my-work=Helped My Work|star2=Thoughtful Response|control_knobs=Valuable Processing Tip|trophy=Valuable Critique"
+    type: list
+
+  npn_critique_award_badge_min_reactions:
+    default: 1
+    min: 1
+
   # --- Recognition chips ------------------------------------------------------
 
   npn_critique_chips_enabled:
