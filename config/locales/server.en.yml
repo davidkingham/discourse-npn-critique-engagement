@@ -40,6 +40,15 @@ en:
     npn_critique_season_topic_enabled: "Post a pinned monthly highlights topic in the critique category naming the month's top critics."
     npn_critique_season_topic_author: "Username that authors the monthly highlights topic."
     npn_critique_season_topic_pin_days: "How many days the monthly highlights topic stays pinned. 0 to skip pinning."
+  system_messages:
+    npn_rising_critic:
+      subject_template: "You're our Rising Critic of the month!"
+      text_body_template: |
+        Congratulations, @%{username}! :seedling:
+
+        You gave more thoughtful critiques than any other new member in %{month} — %{weighted} weighted critiques in your first weeks with us. That's exactly what makes this community work, and it hasn't gone unnoticed: you've been awarded the **%{badge_name}** badge, and for the next month a Rising Critic mark will appear next to your name.
+
+        Thank you for diving straight in. Keep sharing your eye — members who critique regularly get more feedback on their own work, too.
   npn_critique_engagement:
     badges:
       contributor_description: "Reached Healthy critique engagement in a calendar month"

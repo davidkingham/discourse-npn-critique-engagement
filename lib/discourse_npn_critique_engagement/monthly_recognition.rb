@@ -108,6 +108,13 @@ module DiscourseNpnCritiqueEngagement
       return if winner.nil?
 
       BadgeGranter.grant(badge, winner.user)
+      SystemMessage.create_from_system_user(
+        winner.user,
+        :npn_rising_critic,
+        month: @month.strftime("%B %Y"),
+        weighted: winner.weighted_replies.round(1).to_s,
+        badge_name: badge.name,
+      )
       PluginStore.set(
         PLUGIN_NAME,
         RISING_CRITIC_KEY,

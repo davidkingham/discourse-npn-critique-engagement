@@ -133,6 +133,21 @@ describe DiscourseNpnCritiqueEngagement::MonthlyRecognition do
       expect(stored["month"]).to eq(last_month.to_s)
     end
 
+    it "sends the winner a congratulations PM" do
+      described_class.record_due
+
+      pm =
+        Topic
+          .private_messages
+          .joins(:topic_allowed_users)
+          .where(topic_allowed_users: { user_id: rising_star.id })
+          .order(created_at: :desc)
+          .first
+      expect(pm).to be_present
+      expect(pm.first_post.raw).to include(SiteSetting.npn_critique_rising_badge_name)
+      expect(pm.first_post.raw).to include(last_month.strftime("%B %Y"))
+    end
+
     it "mentions the rising critic in the highlights topic" do
       described_class.record_due
 
