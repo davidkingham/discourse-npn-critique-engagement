@@ -12,7 +12,7 @@ export default class CritiqueEditorsPicksRoute extends DiscourseRoute {
     tag: { refreshModel: true },
   };
 
-beforeModel() {
+  beforeModel() {
     if (
       !this.siteSettings.npn_critique_engagement_enabled ||
       !this.currentUser?.staff
@@ -20,8 +20,6 @@ beforeModel() {
       this.router.replaceWith("discovery.latest");
     }
   }
-
-  
 
   model(params) {
     return ajax("/moderate/editors-picks.json", {
