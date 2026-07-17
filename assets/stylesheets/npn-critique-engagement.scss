@@ -483,6 +483,17 @@
     font-size: var(--font-down-1);
   }
 
+  &__subcategory {
+    color: var(--primary-high);
+    font-size: var(--font-down-1);
+  }
+
+  &__replies {
+    font-weight: bold;
+    color: var(--danger);
+    font-size: var(--font-down-1);
+  }
+
   &__pick-row {
     display: flex;
     align-items: center;

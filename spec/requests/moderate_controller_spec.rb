@@ -84,6 +84,48 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
     end
   end
 
+  describe "new member posts" do
+    fab!(:new_members_category, :category)
+    fab!(:intros) { Fabricate(:category, parent_category: new_members_category) }
+
+    before do
+      SiteSetting.npn_critique_new_member_category = new_members_category.id.to_s
+      sign_in(moderator)
+    end
+
+    def make_new_member_topic(category)
+      topic = Fabricate(:topic, category: category, user: newbie)
+      Fabricate(:post, topic: topic, user: newbie)
+      topic
+    end
+
+    it "surfaces posts across the subcategories until they have enough replies" do
+      unanswered = make_new_member_topic(intros)
+      one_reply = make_new_member_topic(new_members_category)
+      Fabricate(:post, topic: one_reply, user: veteran, raw: "welcome aboard, glad you're here")
+      handled = make_new_member_topic(intros)
+      Fabricate(:post, topic: handled, user: veteran, raw: "welcome aboard, glad you're here")
+      Fabricate(:post, topic: handled, user: star_member, raw: "great to have you with us here")
+
+      get "/moderate.json"
+
+      panel = response.parsed_body["new_members"]
+      expect(panel["total"]).to eq(2)
+      expect(panel["topics"].map { |topic| topic["id"] }).to eq([unanswered.id, one_reply.id])
+      expect(panel["topics"].first["replies"]).to eq(0)
+      expect(panel["topics"].first["subcategory"]).to eq(intros.name)
+    end
+
+    it "is empty when the category is not configured" do
+      SiteSetting.npn_critique_new_member_category = ""
+      make_new_member_topic(intros)
+
+      get "/moderate.json"
+
+      expect(response.parsed_body["new_members"]["total"]).to eq(0)
+    end
+  end
+
   describe "pick status" do
     before { sign_in(moderator) }
 

@@ -88,6 +88,69 @@ export default <template>
         {{/if}}
       </section>
 
+      <section class="npn-moderate__panel npn-moderate__new-members">
+        <h2>
+          {{i18n "npn_critique_engagement.moderate.new_members_title"}}
+          <span class="npn-moderate__count">{{@model.new_members.total}}</span>
+        </h2>
+        <p class="npn-moderate__hint">
+          {{i18n "npn_critique_engagement.moderate.new_members_hint"}}
+        </p>
+        {{#if @model.new_members.topics.length}}
+          <ul class="npn-moderate__coverage-list">
+            {{#each @model.new_members.topics as |topic|}}
+              <li class="npn-moderate__coverage-row --urgent">
+                <a class="npn-moderate__thumb-link" href={{topic.url}}>
+                  {{#if topic.image_url}}
+                    <img
+                      class="npn-moderate__thumb"
+                      src={{topic.image_url}}
+                      alt=""
+                      loading="lazy"
+                    />
+                  {{else}}
+                    <div class="npn-moderate__thumb --placeholder">
+                      {{dIcon "seedling"}}
+                    </div>
+                  {{/if}}
+                </a>
+                <div class="npn-moderate__coverage-body">
+                  <a class="npn-moderate__topic" href={{topic.url}}>
+                    {{topic.title}}
+                  </a>
+                  <div class="npn-moderate__coverage-meta">
+                    <a
+                      class="npn-moderate__member"
+                      href={{userPath topic.username}}
+                      data-user-card={{topic.username}}
+                    >
+                      {{dBoundAvatarTemplate topic.avatar_template "tiny"}}
+                      <span>{{topic.username}}</span>
+                    </a>
+                    <span class="npn-moderate__subcategory">
+                      {{topic.subcategory}}
+                    </span>
+                    <span class="npn-moderate__replies">
+                      {{i18n
+                        "npn_critique_engagement.moderate.reply_count"
+                        count=topic.replies
+                      }}
+                    </span>
+                    <span class="npn-moderate__age">
+                      {{dFormatDate topic.created_at format="tiny"}}
+                    </span>
+                  </div>
+                </div>
+              </li>
+            {{/each}}
+          </ul>
+        {{else}}
+          <p class="npn-moderate__empty">
+            {{i18n "npn_critique_engagement.moderate.new_members_empty"}}
+          </p>
+        {{/if}}
+      </section>
+
       <div class="npn-moderate__side">
         <section class="npn-moderate__panel npn-moderate__picks">
           <h2>{{i18n "npn_critique_engagement.moderate.picks_title"}}</h2>

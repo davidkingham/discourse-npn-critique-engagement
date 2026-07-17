@@ -20,6 +20,7 @@ module DiscourseNpnCritiqueEngagement
         format.json do
           render json: {
                    coverage: coverage,
+                   new_members: new_members,
                    pick_status: pick_status,
                    week_start: week_start,
                    outreach: mini_rows(Score.where(tier: :priority_outreach).order(score: :asc)),
@@ -111,6 +112,79 @@ module DiscourseNpnCritiqueEngagement
         score: score_row&.score&.round,
         new_member: new_member?(topic.user, score_row),
       }
+    end
+
+    # Posts in the New Members category tree that haven't collected enough
+    # replies yet. It's a separate category that moderators miss, and every
+    # new member deserves more than one response — so posts stay on the list
+    # until they reach the configured reply count, fewest replies first.
+    def new_members
+      return { total: 0, topics: [] } if new_member_category_ids.blank?
+
+      rows = DB.query(<<~SQL, new_member_params)
+        SELECT t.id, COUNT(p.id) AS replies
+        FROM topics t
+        LEFT JOIN posts p
+          ON p.topic_id = t.id
+          AND p.post_number > 1
+          AND p.deleted_at IS NULL
+          AND p.post_type = 1
+          AND p.user_id > 0
+          AND p.user_id <> t.user_id
+        WHERE t.category_id IN (:category_ids)
+          AND t.archetype = 'regular'
+          AND t.deleted_at IS NULL
+          AND t.visible
+          AND t.user_id > 0
+          AND t.created_at >= :cutoff
+        GROUP BY t.id
+        HAVING COUNT(p.id) < :min_replies
+      SQL
+
+      reply_counts = rows.to_h { |row| [row.id, row.replies] }
+      topics =
+        Topic
+          .where(id: reply_counts.keys)
+          .includes(:user, :image_upload, :category)
+          .reject { |topic| topic.user.nil? }
+          .sort_by { |topic| [reply_counts[topic.id], topic.created_at] }
+
+      {
+        total: topics.size,
+        topics:
+          topics
+            .first(COVERAGE_LIMIT)
+            .map do |topic|
+              {
+                id: topic.id,
+                title: topic.title,
+                url: topic.relative_url,
+                image_url: topic.image_url,
+                created_at: topic.created_at,
+                username: topic.user.username,
+                avatar_template: topic.user.avatar_template,
+                subcategory: topic.category&.name,
+                replies: reply_counts[topic.id],
+              }
+            end,
+      }
+    end
+
+    def new_member_params
+      {
+        category_ids: new_member_category_ids,
+        cutoff: SiteSetting.npn_critique_coverage_days.days.ago,
+        min_replies: SiteSetting.npn_critique_new_member_min_replies,
+      }
+    end
+
+    def new_member_category_ids
+      @new_member_category_ids ||=
+        if (category_id = SiteSetting.npn_critique_new_member_category.presence&.to_i)
+          Category.where("id = :id OR parent_category_id = :id", id: category_id).pluck(:id)
+        else
+          []
+        end
     end
 
     # One row per genre tag active this week: has it received a pick yet,

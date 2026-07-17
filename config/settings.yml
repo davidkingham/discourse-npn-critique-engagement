@@ -180,6 +180,14 @@ plugins:
     default: "black-and-white|grand|intimate"
     type: tag_list
 
+  npn_critique_new_member_category:
+    default: ""
+    type: category
+
+  npn_critique_new_member_min_replies:
+    default: 2
+    min: 1
+
   npn_critique_editors_pick_badge_name:
     default: "Editor's Pick"
 

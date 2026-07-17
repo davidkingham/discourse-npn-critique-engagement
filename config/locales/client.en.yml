@@ -76,6 +76,12 @@ en:
         coverage_title: "Waiting for a critique"
         coverage_hint: "New members first — this is the moment that decides whether they stay. Then our most generous critics: they've earned feedback on their own work."
         coverage_empty: "Every recent image has a substantive critique. Well done."
+        new_members_title: "New member posts"
+        new_members_hint: "A separate category that's easy to miss — and every new member deserves more than one response."
+        new_members_empty: "Every recent new-member post has enough replies. Well done."
+        reply_count:
+          one: "%{count} reply"
+          other: "%{count} replies"
         picks_title: "This week's picks"
         picks_hint: "One editors' pick per genre, each week."
         picks_empty: "No images posted this week yet."
