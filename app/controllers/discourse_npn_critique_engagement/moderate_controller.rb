@@ -78,7 +78,10 @@ module DiscourseNpnCritiqueEngagement
       SQL
 
       topics =
-        Topic.where(id: topic_ids).includes(:user, :image_upload).reject { |topic| topic.user.nil? }
+        Topic
+          .where(id: topic_ids)
+          .includes(:user, :image_upload, :tags)
+          .reject { |topic| topic.user.nil? }
       scores = Score.where(user_id: topics.map(&:user_id).uniq).index_by(&:user_id)
 
       sorted = topics.sort_by { |topic| coverage_sort_key(topic, scores[topic.user_id]) }
@@ -114,6 +117,7 @@ module DiscourseNpnCritiqueEngagement
         created_at: topic.created_at,
         username: topic.user.username,
         avatar_template: topic.user.avatar_template,
+        tags: topic.tags.map(&:name).sort - [pick_tag],
         tier: score_row&.tier || (new_member?(topic.user, score_row) ? "new_member" : nil),
         score: score_row&.score&.round,
         new_member: new_member?(topic.user, score_row),

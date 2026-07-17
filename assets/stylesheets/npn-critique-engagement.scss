@@ -488,6 +488,14 @@
     font-size: var(--font-down-1);
   }
 
+  &__tag {
+    background: var(--primary-very-low);
+    border-radius: 1em;
+    padding: 0 0.6em;
+    font-size: var(--font-down-1);
+    white-space: nowrap;
+  }
+
   &__replies {
     font-weight: bold;
     color: var(--danger);

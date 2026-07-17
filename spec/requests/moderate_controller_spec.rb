@@ -52,6 +52,7 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
         [newbie_topic.id, star_topic.id, veteran_topic.id],
       )
       expect(coverage["topics"].first["new_member"]).to eq(true)
+      expect(coverage["topics"].first["tags"]).to eq(["landscape"])
     end
 
     it "clears topics once they receive a substantive critique, but not a short one" do

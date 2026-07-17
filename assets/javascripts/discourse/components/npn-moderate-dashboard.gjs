@@ -1,5 +1,6 @@
 import { hash } from "@ember/helper";
 import { LinkTo } from "@ember/routing";
+import getURL from "discourse/lib/get-url";
 import { userPath } from "discourse/lib/url";
 import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-template";
 import dFormatDate from "discourse/ui-kit/helpers/d-format-date";
@@ -9,6 +10,10 @@ import NpnTierBadge from "discourse/plugins/discourse-npn-critique-engagement/di
 
 function rowClass(topic) {
   return `npn-moderate__coverage-row ${topic.new_member ? "--urgent" : ""}`;
+}
+
+function tagUrl(tag) {
+  return getURL(`/tag/${tag}`);
 }
 
 export default <template>
@@ -73,6 +78,11 @@ export default <template>
                     {{#if topic.score}}
                       <span class="npn-moderate__score">{{topic.score}}</span>
                     {{/if}}
+                    {{#each topic.tags as |tag|}}
+                      <a class="npn-moderate__tag" href={{tagUrl tag}}>
+                        {{tag}}
+                      </a>
+                    {{/each}}
                     <span class="npn-moderate__age">
                       {{dFormatDate topic.created_at format="tiny"}}
                     </span>
