@@ -197,72 +197,88 @@ module DiscourseNpnCritiqueEngagement
         end
     end
 
-    # One row per genre tag active this week: has it received a pick yet,
-    # and from whom?
+    # One row per genre tag in play: has a pick been MADE since the week
+    # began? Moderators pick at week's end for the week that just closed, so
+    # the board keys on when the pick happened — not on when the image was
+    # posted — and resets every Sunday.
     def pick_status
       return [] if category_ids.blank?
 
-      topics =
+      # The pick pool — this week's and last week's images — supplies the
+      # genre vocabulary; a pick for an even older image still shows via its
+      # declared genre below.
+      pool =
         Topic
           .where(category_id: category_ids)
           .where(archetype: Archetype.default)
           .where(deleted_at: nil, visible: true)
           .where("topics.user_id > 0")
-          .where(created_at: week_start.beginning_of_day..)
+          .where(created_at: (week_start - 7.days).beginning_of_day..)
           .includes(:tags)
           .to_a
 
-      picked_topic_ids =
-        topics.select { |topic| topic.tags.map(&:name).include?(pick_tag) }.map(&:id)
-      pick_notes =
-        Post
-          .where(topic_id: picked_topic_ids, action_code: EditorsPick::ACTION_CODE, deleted_at: nil)
-          .includes(:user)
-          .order(:created_at)
-          .index_by(&:topic_id)
-      note_genres =
-        PostCustomField
-          .where(post_id: pick_notes.values.map(&:id), name: EditorsPick::GENRE_FIELD)
-          .pluck(:post_id, :value)
-          .to_h
+      events = pick_events
+      tags =
+        (genre_tags(pool) + events.filter_map { |event| event[:genre] }).uniq.sort -
+          excluded_pick_tags
 
-      # Finalized and staged picks alike fill a genre slot — a pick in its
-      # undo window must already block a second moderator from double-picking
-      # the genre.
-      pick_infos = {}
-      topics.each do |topic|
-        if picked_topic_ids.include?(topic.id)
-          note = pick_notes[topic.id]
-          pick_infos[topic.id] = {
-            username: note&.user&.username,
-            genre: note && note_genres[note.id],
-          }
-        end
-      end
-      PendingPick
-        .for_topics(topics.map(&:id))
-        .each do |topic_id, pending|
-          pick_infos[topic_id] ||= { username: pending.user&.username, genre: pending.genre }
-        end
-
-      genre_tags(topics).map do |tag|
-        tagged = topics.select { |topic| topic.tags.map(&:name).include?(tag) }
+      tags.map do |tag|
         # A pick declared for a genre fills only that genre's slot — tags
         # overlap, the declaration doesn't. Picks made before genres were
         # recorded fall back to counting for every genre they're tagged with.
-        picked =
-          tagged.find do |topic|
-            info = pick_infos[topic.id]
-            next false if info.nil?
-            info[:genre].nil? || info[:genre] == tag
+        event =
+          events.find do |candidate|
+            if candidate[:genre]
+              candidate[:genre] == tag
+            else
+              candidate[:topic_tags].include?(tag)
+            end
           end
-        info = picked && pick_infos[picked.id]
 
         {
           tag: tag,
-          picked: picked.present?,
-          picked_by: info&.dig(:username),
-          topic_url: picked&.relative_url,
+          picked: event.present?,
+          picked_by: event&.dig(:username),
+          topic_url: event&.dig(:topic_url),
+        }
+      end
+    end
+
+    # Every pick made since Sunday — finalized notes and staged picks in
+    # their undo window alike (a staged pick must already fill its genre slot
+    # so nobody double-picks it).
+    def pick_events
+      week_cutoff = week_start.beginning_of_day
+
+      notes =
+        Post
+          .joins(:topic)
+          .where(topics: { category_id: category_ids, deleted_at: nil })
+          .where(action_code: EditorsPick::ACTION_CODE, deleted_at: nil)
+          .where(created_at: week_cutoff..)
+          .includes(:user, topic: :tags)
+          .order(:created_at)
+          .to_a
+      note_genres =
+        PostCustomField
+          .where(post_id: notes.map(&:id), name: EditorsPick::GENRE_FIELD)
+          .pluck(:post_id, :value)
+          .to_h
+
+      pendings =
+        PendingPick
+          .joins(:topic)
+          .where(topics: { category_id: category_ids, deleted_at: nil })
+          .where(created_at: week_cutoff..)
+          .includes(:user, topic: :tags)
+
+      (notes + pendings.to_a).map do |record|
+        note = record.is_a?(Post)
+        {
+          username: record.user&.username,
+          genre: note ? note_genres[record.id] : record.genre,
+          topic_tags: record.topic.tags.map(&:name),
+          topic_url: record.topic.relative_url,
         }
       end
     end

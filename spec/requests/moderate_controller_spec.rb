@@ -165,6 +165,33 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       expect(status["wildlife"]["picked"]).to eq(false)
     end
 
+    it "counts a pick made this week even when the image was posted last week" do
+      last_week = Date.current.beginning_of_week(:sunday) - 3.days
+      image = make_image_topic(veteran, created_at: last_week.to_time)
+
+      post "/moderate/editors-picks/pick.json", params: { topic_id: image.id, genre: "landscape" }
+
+      get "/moderate.json"
+
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["landscape"]["picked"]).to eq(true)
+      expect(status["landscape"]["picked_by"]).to eq(moderator.username)
+    end
+
+    it "resets on Sunday — picks made before the week began no longer count" do
+      last_week = Date.current.beginning_of_week(:sunday) - 3.days
+      image = make_image_topic(veteran, created_at: last_week.to_time)
+      post "/moderate/editors-picks/pick.json", params: { topic_id: image.id, genre: "landscape" }
+      Post.where(topic_id: image.id, action_code: "npn_editors_pick").update_all(
+        created_at: last_week.to_time,
+      )
+
+      get "/moderate.json"
+
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["landscape"]["picked"]).to eq(false)
+    end
+
     it "counts a staged pick for its genre so nobody double-picks it" do
       wildlife_tag = Fabricate(:tag, name: "wildlife")
       staged = make_image_topic(veteran, created_at: 1.hour.ago)
