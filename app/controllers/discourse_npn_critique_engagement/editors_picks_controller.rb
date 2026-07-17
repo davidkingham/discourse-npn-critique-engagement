@@ -141,14 +141,31 @@ module DiscourseNpnCritiqueEngagement
     end
 
     def week_topics(week_start)
-      Topic
-        .where(category_id: category_ids)
-        .where(archetype: Archetype.default)
-        .where(deleted_at: nil, visible: true)
-        .where("topics.user_id > 0")
-        .where(created_at: week_start.beginning_of_day...(week_start + 7.days).beginning_of_day)
-        .includes(:tags, :user, :image_upload)
-        .to_a
+      scope =
+        Topic
+          .where(category_id: category_ids)
+          .where(archetype: Archetype.default)
+          .where(deleted_at: nil, visible: true)
+          .where("topics.user_id > 0")
+          .where(created_at: week_start.beginning_of_day...(week_start + 7.days).beginning_of_day)
+          .where(
+            "NOT EXISTS (SELECT 1 FROM topic_custom_fields tcf
+             WHERE tcf.topic_id = topics.id AND tcf.name = 'npn_weekly_challenge_slug')",
+          )
+
+      # Weekly-challenge ANNOUNCEMENT topics aren't pickable images — the
+      # marker field catches ones the weekly-challenge plugin created, the
+      # title prefixes catch older ones from before the marker existed.
+      # Challenge ENTRIES stay in the queue.
+      excluded_title_prefixes.each do |prefix|
+        scope = scope.where("topics.title NOT ILIKE ?", "#{prefix}%")
+      end
+
+      scope.includes(:tags, :user, :image_upload).to_a
+    end
+
+    def excluded_title_prefixes
+      SiteSetting.npn_critique_coverage_excluded_title_prefixes.to_s.split("|")
     end
 
     # The genre selector: every tag carried by the week's topics, except the

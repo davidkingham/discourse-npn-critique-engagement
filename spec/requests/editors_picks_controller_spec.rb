@@ -90,6 +90,27 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       expect(response.parsed_body["topics"].map { |topic| topic["id"] }).to eq([wildlife_topic.id])
     end
 
+    it "keeps weekly-challenge announcement topics out of the pick queue" do
+      marked = make_image_topic(quiet_poster, landscape_tag)
+      marked.custom_fields["npn_weekly_challenge_slug"] = "geological-wonders"
+      marked.save_custom_fields
+      legacy =
+        Fabricate(
+          :topic,
+          category: category,
+          user: quiet_poster,
+          title: "Weekly Challenge: Geological Wonders",
+        )
+      Fabricate(:post, topic: legacy, user: quiet_poster)
+
+      get "/moderate/editors-picks.json"
+
+      ids = response.parsed_body["topics"].map { |topic| topic["id"] }
+      expect(ids).not_to include(marked.id)
+      expect(ids).not_to include(legacy.id)
+      expect(ids).to include(engaged_topic.id)
+    end
+
     it "excludes other weeks and other categories" do
       old_topic = make_image_topic(quiet_poster, landscape_tag)
       old_topic.update!(created_at: 2.weeks.ago)
