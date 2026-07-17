@@ -5,13 +5,7 @@ export default function () {
   this.route("critique-hall-of-fame", {
     path: "/critique-engagement/hall-of-fame",
   });
-  this.route("critique-editors-picks", {
-    path: "/critique-engagement/editors-picks",
-  });
-  this.route("critique-outreach", {
-    path: "/critique-engagement/outreach",
-  });
-  this.route("critique-moderate", {
-    path: "/critique-engagement/moderate",
-  });
+  this.route("critique-moderate", { path: "/moderate" });
+  this.route("critique-editors-picks", { path: "/moderate/editors-picks" });
+  this.route("critique-outreach", { path: "/moderate/outreach" });
 }

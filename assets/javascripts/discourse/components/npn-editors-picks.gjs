@@ -49,12 +49,9 @@ export default class NpnEditorsPicks extends Component {
       if (tag) {
         data.tag = tag;
       }
-      this.dataOverride = await ajax(
-        "/critique-engagement/editors-picks.json",
-        {
-          data,
-        }
-      );
+      this.dataOverride = await ajax("/moderate/editors-picks.json", {
+        data,
+      });
     } catch (error) {
       popupAjaxError(error);
     } finally {
@@ -83,7 +80,7 @@ export default class NpnEditorsPicks extends Component {
       message: i18n("npn_critique_engagement.editors_picks.confirm_pick"),
       didConfirm: async () => {
         try {
-          const result = await ajax("/critique-engagement/editors-picks/pick", {
+          const result = await ajax("/moderate/editors-picks/pick", {
             type: "POST",
             data: { topic_id: topic.id },
           });

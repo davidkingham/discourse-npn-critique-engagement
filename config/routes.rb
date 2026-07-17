@@ -4,10 +4,19 @@ DiscourseNpnCritiqueEngagement::Engine.routes.draw do
   get "/critique-engagement/leaderboard" => "leaderboards#show"
   get "/critique-engagement/hall-of-fame" => "leaderboards#hall_of_fame"
   get "/critique-engagement/impact" => "impact#show"
-  get "/critique-engagement/editors-picks" => "editors_picks#show"
-  post "/critique-engagement/editors-picks/pick" => "editors_picks#pick"
-  get "/critique-engagement/outreach" => "editors_picks#outreach"
-  get "/critique-engagement/moderate" => "moderate#show"
+
+  # Moderator tools live under /moderate — the dashboard at the root, the
+  # work surfaces beneath it.
+  get "/moderate" => "moderate#show"
+  get "/moderate/editors-picks" => "editors_picks#show"
+  post "/moderate/editors-picks/pick" => "editors_picks#pick"
+  get "/moderate/outreach" => "editors_picks#outreach"
+
+  # The tools briefly shipped under /critique-engagement — keep early
+  # bookmarks working.
+  get "/critique-engagement/editors-picks", to: redirect("/moderate/editors-picks", status: 301)
+  get "/critique-engagement/outreach", to: redirect("/moderate/outreach", status: 301)
+  get "/critique-engagement/moderate", to: redirect("/moderate", status: 301)
 
   scope "/admin/plugins/critique-engagement", constraints: StaffConstraint.new do
     get "/report" => "admin/reports#index"

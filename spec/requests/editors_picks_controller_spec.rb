@@ -33,7 +33,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
   it "is staff-only" do
     sign_in(engaged_poster)
 
-    get "/critique-engagement/editors-picks.json"
+    get "/moderate/editors-picks.json"
 
     expect(response.status).to eq(403)
   end
@@ -44,9 +44,22 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
   it "serves the outreach page shell" do
     sign_in(moderator)
 
-    get "/critique-engagement/outreach"
+    get "/moderate/outreach"
 
     expect(response.status).to eq(200)
+  end
+
+  it "redirects the tools' original URLs to /moderate" do
+    sign_in(moderator)
+
+    get "/critique-engagement/editors-picks"
+    expect(response).to redirect_to("/moderate/editors-picks")
+
+    get "/critique-engagement/outreach"
+    expect(response).to redirect_to("/moderate/outreach")
+
+    get "/critique-engagement/moderate"
+    expect(response).to redirect_to("/moderate")
   end
 
   describe "#show" do
@@ -57,7 +70,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
     before { sign_in(moderator) }
 
     it "lists the week's images sorted by poster standing" do
-      get "/critique-engagement/editors-picks.json"
+      get "/moderate/editors-picks.json"
 
       expect(response.status).to eq(200)
       topics = response.parsed_body["topics"]
@@ -70,7 +83,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
     end
 
     it "filters by tag" do
-      get "/critique-engagement/editors-picks.json", params: { tag: "wildlife" }
+      get "/moderate/editors-picks.json", params: { tag: "wildlife" }
 
       expect(response.parsed_body["topics"].map { |topic| topic["id"] }).to eq([wildlife_topic.id])
     end
@@ -81,7 +94,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       elsewhere = Fabricate(:topic, user: quiet_poster, tags: [landscape_tag])
       Fabricate(:post, topic: elsewhere, user: quiet_poster)
 
-      get "/critique-engagement/editors-picks.json"
+      get "/moderate/editors-picks.json"
 
       ids = response.parsed_body["topics"].map { |topic| topic["id"] }
       expect(ids).not_to include(old_topic.id)
@@ -95,7 +108,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
     before { sign_in(moderator) }
 
     it "applies the pick tag and posts a public small-action note" do
-      post "/critique-engagement/editors-picks/pick.json", params: { topic_id: topic.id }
+      post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id }
 
       expect(response.status).to eq(200)
       expect(topic.reload.tags.map(&:name)).to include("editors-pick")
@@ -105,7 +118,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       expect(note.action_code).to eq("npn_editors_pick")
       expect(note.user_id).to eq(moderator.id)
 
-      get "/critique-engagement/editors-picks.json"
+      get "/moderate/editors-picks.json"
       picked = response.parsed_body["topics"].find { |entry| entry["id"] == topic.id }
       expect(picked["picked"]).to eq(true)
       expect(picked["picked_by"]["username"]).to eq(moderator.username)
@@ -113,7 +126,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
     end
 
     it "grants the post-tied Editor's Pick badge and sends a congratulations PM" do
-      post "/critique-engagement/editors-picks/pick.json", params: { topic_id: topic.id }
+      post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id }
 
       badge = Badge.find_by(name: SiteSetting.npn_critique_editors_pick_badge_name)
       user_badge = UserBadge.find_by(badge: badge, user: engaged_poster)
@@ -135,7 +148,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       SiteSetting.npn_critique_editors_pick_badge_name = ""
       SiteSetting.npn_critique_editors_pick_pm_enabled = false
 
-      post "/critique-engagement/editors-picks/pick.json", params: { topic_id: topic.id }
+      post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id }
 
       expect(response.status).to eq(200)
       expect(UserBadge.count).to eq(0)
@@ -143,8 +156,8 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
     end
 
     it "rejects picking twice" do
-      post "/critique-engagement/editors-picks/pick.json", params: { topic_id: topic.id }
-      post "/critique-engagement/editors-picks/pick.json", params: { topic_id: topic.id }
+      post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id }
+      post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id }
 
       expect(response.status).to eq(422)
     end
@@ -153,7 +166,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       other = Fabricate(:topic, user: engaged_poster)
       Fabricate(:post, topic: other, user: engaged_poster)
 
-      post "/critique-engagement/editors-picks/pick.json", params: { topic_id: other.id }
+      post "/moderate/editors-picks/pick.json", params: { topic_id: other.id }
 
       expect(response.status).to eq(404)
     end

@@ -24,7 +24,7 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
   it "is staff-only" do
     sign_in(veteran)
 
-    get "/critique-engagement/moderate.json"
+    get "/moderate.json"
 
     expect(response.status).to eq(403)
   end
@@ -43,7 +43,7 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       star_topic = make_image_topic(star_member, created_at: 1.day.ago)
       newbie_topic = make_image_topic(newbie, created_at: 2.hours.ago)
 
-      get "/critique-engagement/moderate.json"
+      get "/moderate.json"
 
       expect(response.status).to eq(200)
       coverage = response.parsed_body["coverage"]
@@ -60,7 +60,7 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       brushed_off = make_image_topic(star_member)
       Fabricate(:post, topic: brushed_off, user: veteran, raw: "nice shot, love it a lot")
 
-      get "/critique-engagement/moderate.json"
+      get "/moderate.json"
 
       ids = response.parsed_body["coverage"]["topics"].map { |topic| topic["id"] }
       expect(ids).to contain_exactly(brushed_off.id)
@@ -69,7 +69,7 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
     it "ignores topics older than the coverage window" do
       make_image_topic(veteran, created_at: 20.days.ago)
 
-      get "/critique-engagement/moderate.json"
+      get "/moderate.json"
 
       expect(response.parsed_body["coverage"]["total"]).to eq(0)
     end
@@ -78,7 +78,7 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       challenge_tag = Fabricate(:tag, name: "weekly-challenge")
       make_image_topic(veteran, tag: challenge_tag)
 
-      get "/critique-engagement/moderate.json"
+      get "/moderate.json"
 
       expect(response.parsed_body["coverage"]["total"]).to eq(0)
     end
@@ -92,9 +92,9 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       wildlife_tag = Fabricate(:tag, name: "wildlife")
       make_image_topic(star_member, tag: wildlife_tag, created_at: 1.hour.ago)
 
-      post "/critique-engagement/editors-picks/pick.json", params: { topic_id: picked_topic.id }
+      post "/moderate/editors-picks/pick.json", params: { topic_id: picked_topic.id }
 
-      get "/critique-engagement/moderate.json"
+      get "/moderate.json"
 
       status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
       expect(status["landscape"]["picked"]).to eq(true)
@@ -107,7 +107,7 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       make_image_topic(veteran, tag: style_tag, created_at: 1.hour.ago)
       make_image_topic(star_member, created_at: 1.hour.ago)
 
-      get "/critique-engagement/moderate.json"
+      get "/moderate.json"
 
       expect(response.parsed_body["pick_status"].map { |genre| genre["tag"] }).to eq(["landscape"])
     end
@@ -130,7 +130,7 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
     )
     sign_in(moderator)
 
-    get "/critique-engagement/moderate.json"
+    get "/moderate.json"
 
     expect(response.parsed_body["outreach"].map { |row| row["username"] }).to eq([veteran.username])
     expect(response.parsed_body["welcome"].map { |row| row["username"] }).to eq([newbie.username])

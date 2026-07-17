@@ -18,7 +18,7 @@ export default class CritiqueEditorsPicksRoute extends DiscourseRoute {
   }
 
   model() {
-    return ajax("/critique-engagement/editors-picks.json");
+    return ajax("/moderate/editors-picks.json");
   }
 
   titleToken() {

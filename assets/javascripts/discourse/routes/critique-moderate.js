@@ -18,7 +18,7 @@ export default class CritiqueModerateRoute extends DiscourseRoute {
   }
 
   model() {
-    return ajax("/critique-engagement/moderate.json");
+    return ajax("/moderate.json");
   }
 
   titleToken() {
