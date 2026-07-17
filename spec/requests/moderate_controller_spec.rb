@@ -74,13 +74,26 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       expect(response.parsed_body["coverage"]["total"]).to eq(0)
     end
 
-    it "ignores topics carrying a coverage-excluded tag" do
-      challenge_tag = Fabricate(:tag, name: "weekly-challenge")
-      make_image_topic(veteran, tag: challenge_tag)
+    it "ignores topics carrying a coverage-excluded tag when configured" do
+      SiteSetting.npn_critique_coverage_excluded_tags = "showcase"
+      showcase_tag = Fabricate(:tag, name: "showcase")
+      make_image_topic(veteran, tag: showcase_tag)
 
       get "/moderate.json"
 
       expect(response.parsed_body["coverage"]["total"]).to eq(0)
+    end
+
+    it "covers weekly challenge entries but never the announcement topics" do
+      challenge_tag = Fabricate(:tag, name: "weekly-challenge")
+      entry = make_image_topic(veteran, tag: challenge_tag)
+      announcement = make_image_topic(moderator, tag: challenge_tag)
+      announcement.upsert_custom_fields(npn_weekly_challenge_slug: "2026-07-12-freshwater")
+
+      get "/moderate.json"
+
+      ids = response.parsed_body["coverage"]["topics"].map { |topic| topic["id"] }
+      expect(ids).to contain_exactly(entry.id)
     end
   end
 

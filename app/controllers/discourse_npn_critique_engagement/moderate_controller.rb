@@ -68,6 +68,11 @@ module DiscourseNpnCritiqueEngagement
               AND p.user_id <> t.user_id
               AND LENGTH(REGEXP_REPLACE(p.raw, :quote_pattern, '', 'gi')) >= :min_length
           )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM topic_custom_fields tcf
+            WHERE tcf.topic_id = t.id AND tcf.name = 'npn_weekly_challenge_slug'
+          )
           #{coverage_excluded_tags_fragment}
       SQL
 
@@ -237,9 +242,11 @@ module DiscourseNpnCritiqueEngagement
       SiteSetting.npn_critique_pick_excluded_tags.to_s.split("|")
     end
 
-    # Weekly-challenge threads (and anything else listed) don't need critique
-    # coverage. The fragment is a trusted constant shape; tag names travel as
-    # a bind param.
+    # Weekly-challenge ANNOUNCEMENT topics (marked by the weekly-challenge
+    # plugin's custom field, excluded in the query above) never need
+    # critiques — but challenge entries do, so exclusion by tag is opt-in
+    # via the setting. The fragment is a trusted constant shape; tag names
+    # travel as a bind param.
     def coverage_excluded_tags_fragment
       return "" if coverage_excluded_tags.blank?
 
