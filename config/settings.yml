@@ -166,6 +166,7 @@ plugins:
   npn_critique_editors_pick_tag:
     default: "editors-pick"
     type: tag_list
+    client: true
 
   npn_critique_coverage_days:
     default: 14
@@ -183,6 +184,7 @@ plugins:
   npn_critique_pick_excluded_tags:
     default: "black-and-white|grand|intimate"
     type: tag_list
+    client: true
 
   npn_critique_new_member_category:
     default: ""
