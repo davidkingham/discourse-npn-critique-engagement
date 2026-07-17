@@ -3,6 +3,7 @@ import { tracked } from "@glimmer/tracking";
 import { concat, fn } from "@ember/helper";
 import { on } from "@ember/modifier";
 import { action } from "@ember/object";
+import { trustHTML } from "@ember/template";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 import { userPath } from "discourse/lib/url";
@@ -46,7 +47,22 @@ function trendIcon(trend) {
   return trend >= 0 ? "arrow-trend-up" : "arrow-trend-down";
 }
 
-export default class NpnAdminReport extends Component {
+function segmentStyle(segment) {
+  return trustHTML(`flex-grow: ${segment.count}`);
+}
+
+function median(values) {
+  if (values.length === 0) {
+    return 0;
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
+
+export default class NpnCritiqueReport extends Component {
   @tracked dataOverride = null;
   @tracked tierFilter = null;
   @tracked textFilter = "";
@@ -56,6 +72,28 @@ export default class NpnAdminReport extends Component {
 
   get data() {
     return this.dataOverride ?? this.args.model;
+  }
+
+  // Where the whole community stands, computed from the loaded period.
+  get stats() {
+    const rows = this.data.rows;
+    const tierCounts = {};
+    let totalWeighted = 0;
+    for (const row of rows) {
+      tierCounts[row.tier] = (tierCounts[row.tier] || 0) + 1;
+      totalWeighted += row.weighted_replies;
+    }
+
+    return {
+      members: rows.length,
+      totalWeighted: Math.round(totalWeighted * 10) / 10,
+      medianRatio: Math.round(median(rows.map((row) => row.ratio)) * 100) / 100,
+      tierSegments: TIERS.map((tier) => ({
+        tier,
+        count: tierCounts[tier] || 0,
+        label: tierLabel(tier),
+      })).filter((segment) => segment.count > 0),
+    };
   }
 
   get rows() {
@@ -133,6 +171,37 @@ export default class NpnAdminReport extends Component {
           "npn_critique_engagement.admin.report.nav_description"
         }}
       />
+
+      <dl class="npn-admin-report__stats">
+        <div class="npn-admin-report__stat">
+          <dt>{{i18n "npn_critique_engagement.admin.health.members"}}</dt>
+          <dd>{{this.stats.members}}</dd>
+        </div>
+        <div class="npn-admin-report__stat">
+          <dt>{{i18n "npn_critique_engagement.admin.health.volume"}}</dt>
+          <dd>{{this.stats.totalWeighted}}</dd>
+        </div>
+        <div class="npn-admin-report__stat">
+          <dt>{{i18n "npn_critique_engagement.admin.health.median_ratio"}}</dt>
+          <dd>{{this.stats.medianRatio}}</dd>
+        </div>
+        <div class="npn-admin-report__stat --tiers">
+          <dt>{{i18n
+              "npn_critique_engagement.admin.health.tier_distribution"
+            }}</dt>
+          <dd>
+            <div class="npn-tier-bar">
+              {{#each this.stats.tierSegments as |segment|}}
+                <span
+                  class="npn-tier-bar__segment --{{segment.tier}}"
+                  style={{segmentStyle segment}}
+                  title="{{segment.label}}: {{segment.count}}"
+                ></span>
+              {{/each}}
+            </div>
+          </dd>
+        </div>
+      </dl>
 
       <div class="npn-admin-report__filters">
         <DSelect

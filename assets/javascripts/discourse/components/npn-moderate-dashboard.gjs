@@ -21,6 +21,10 @@ export default <template>
       <p class="npn-moderate__description">
         {{i18n "npn_critique_engagement.moderate.description"}}
       </p>
+      <LinkTo @route="critique-report" class="npn-moderate__report-link">
+        {{i18n "npn_critique_engagement.moderate.report_link"}}
+        {{dIcon "chevron-right"}}
+      </LinkTo>
     </header>
 
     <div class="npn-moderate__panels">

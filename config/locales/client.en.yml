@@ -74,6 +74,7 @@ en:
         title: "Moderator dashboard"
         sidebar_text: "Moderator dashboard"
         sidebar_title: "Critique coverage, picks, and outreach in one place"
+        report_link: "Full member report"
         description: "Everything to triage in one place. Staff only."
         coverage_title: "Waiting for a critique"
         coverage_hint: "New members first — this is the moment that decides whether they stay. Then our most generous critics: they've earned feedback on their own work."

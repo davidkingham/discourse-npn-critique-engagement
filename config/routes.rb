@@ -10,7 +10,8 @@ DiscourseNpnCritiqueEngagement::Engine.routes.draw do
   get "/moderate" => "moderate#show"
   get "/moderate/editors-picks" => "editors_picks#show"
   post "/moderate/editors-picks/pick" => "editors_picks#pick"
-  get "/moderate/outreach" => "editors_picks#outreach"
+  get "/moderate/outreach" => "editors_picks#page_shell"
+  get "/moderate/report" => "editors_picks#page_shell"
 
   # The tools briefly shipped under /critique-engagement — keep early
   # bookmarks working.

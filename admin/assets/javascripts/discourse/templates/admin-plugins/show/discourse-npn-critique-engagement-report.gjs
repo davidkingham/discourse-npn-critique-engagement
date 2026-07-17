@@ -1,5 +1,5 @@
-import NpnAdminReport from "../../../components/npn-admin-report";
+import NpnCritiqueReport from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-critique-report";
 
 export default <template>
-  <NpnAdminReport @model={{@controller.model}} />
+  <NpnCritiqueReport @model={{@controller.model}} />
 </template>

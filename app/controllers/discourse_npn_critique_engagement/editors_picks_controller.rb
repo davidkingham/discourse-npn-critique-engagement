@@ -35,10 +35,10 @@ module DiscourseNpnCritiqueEngagement
       end
     end
 
-    # GET /critique-engagement/outreach
-    # HTML shell only — the Ember route fetches its data from the staff JSON
+    # GET /moderate/outreach and /moderate/report
+    # HTML shell only — the Ember routes fetch their data from the staff JSON
     # endpoints under /admin/plugins/critique-engagement.
-    def outreach
+    def page_shell
       render html: nil, layout: true
     end
 

@@ -41,11 +41,13 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
   # HTML navigations always get the app shell (check_xhr renders it before
   # controller gates run); access control lives in the Ember route redirect
   # and the staff-gated JSON endpoints.
-  it "serves the outreach page shell" do
+  it "serves the outreach and report page shells" do
     sign_in(moderator)
 
     get "/moderate/outreach"
+    expect(response.status).to eq(200)
 
+    get "/moderate/report"
     expect(response.status).to eq(200)
   end
 

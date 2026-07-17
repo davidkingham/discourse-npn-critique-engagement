@@ -649,6 +649,31 @@
 }
 
 .npn-admin-report {
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
+    gap: 1em;
+    margin: 0 0 1em;
+    padding: 0.75em 1em;
+    border: 1px solid var(--primary-low);
+    border-radius: var(--d-border-radius);
+
+    dt {
+      font-size: var(--font-down-1);
+      color: var(--primary-high);
+    }
+
+    dd {
+      margin: 0;
+      font-size: var(--font-up-1);
+      font-weight: bold;
+    }
+
+    .--tiers dd {
+      padding-block-start: 0.4em;
+    }
+  }
+
   &__filters {
     display: flex;
     flex-wrap: wrap;
