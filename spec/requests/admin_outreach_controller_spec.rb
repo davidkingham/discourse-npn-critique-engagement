@@ -55,6 +55,28 @@ describe DiscourseNpnCritiqueEngagement::Admin::OutreachController do
     )
   end
 
+  it "surfaces each member's top genre tags for the right moderator to reach out" do
+    SiteSetting.npn_critique_category = Fabricate(:category).id.to_s
+    category = Category.find(SiteSetting.npn_critique_category.to_i)
+    landscape = Fabricate(:tag, name: "landscape")
+    wildlife = Fabricate(:tag, name: "wildlife")
+    style = Fabricate(:tag, name: "black-and-white")
+    2.times do
+      topic = Fabricate(:topic, category: category, user: member, tags: [landscape, style])
+      Fabricate(:post, topic: topic, user: member)
+    end
+    topic = Fabricate(:topic, category: category, user: member, tags: [wildlife])
+    Fabricate(:post, topic: topic, user: member)
+    sign_in(moderator)
+
+    get "/admin/plugins/critique-engagement/outreach.json"
+
+    row = response.parsed_body["rows"].find { |entry| entry["username"] == member.username }
+    expect(row["top_tags"]).to eq(
+      [{ "tag" => "landscape", "count" => 2 }, { "tag" => "wildlife", "count" => 1 }],
+    )
+  end
+
   it "queues only priority-outreach members with their last contact" do
     DiscourseNpnCritiqueEngagement::OutreachLog.create!(
       user: member,

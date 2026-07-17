@@ -778,6 +778,22 @@
     color: var(--primary-high);
   }
 
+  &__genres {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4em;
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
+  }
+
+  &__genre {
+    background: var(--primary-very-low);
+    border-radius: 1em;
+    padding: 0 0.6em;
+    white-space: nowrap;
+  }
+
   &__toggle {
     margin-inline-start: auto;
   }

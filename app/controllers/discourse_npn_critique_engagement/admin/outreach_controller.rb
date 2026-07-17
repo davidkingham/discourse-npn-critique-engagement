@@ -32,12 +32,27 @@ module DiscourseNpnCritiqueEngagement
             .limit(WELCOME_LIMIT)
             .reject { |row| row.user.nil? }
 
-        outreach_logs = OutreachLog.latest_for((rows + welcome_rows).map(&:user_id))
+        all_user_ids = (rows + welcome_rows).map(&:user_id)
+        outreach_logs = OutreachLog.latest_for(all_user_ids)
+        # Which genres each member posts to, so the right genre moderator
+        # makes the contact.
+        top_tags = GenreTags.top_for_users(all_user_ids)
 
         render json: {
-                 rows: serialize_data(rows, ReportRowSerializer, outreach_logs: outreach_logs),
+                 rows:
+                   serialize_data(
+                     rows,
+                     ReportRowSerializer,
+                     outreach_logs: outreach_logs,
+                     top_tags: top_tags,
+                   ),
                  welcome_rows:
-                   serialize_data(welcome_rows, ReportRowSerializer, outreach_logs: outreach_logs),
+                   serialize_data(
+                     welcome_rows,
+                     ReportRowSerializer,
+                     outreach_logs: outreach_logs,
+                     top_tags: top_tags,
+                   ),
                }
       end
 

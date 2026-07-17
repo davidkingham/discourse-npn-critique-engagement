@@ -6,6 +6,7 @@ import { service } from "@ember/service";
 import Form from "discourse/components/form";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
+import getURL from "discourse/lib/get-url";
 import { userPath } from "discourse/lib/url";
 import { eq } from "discourse/truth-helpers";
 import DButton from "discourse/ui-kit/d-button";
@@ -14,6 +15,10 @@ import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-templa
 import dFormatDate from "discourse/ui-kit/helpers/d-format-date";
 import { i18n } from "discourse-i18n";
 import NpnTierBadge from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-tier-badge";
+
+function tagUrl(tag) {
+  return getURL(`/tag/${tag}`);
+}
 
 const OutreachRow = <template>
   <li class="npn-admin-outreach__row">
@@ -34,6 +39,17 @@ const OutreachRow = <template>
         {{i18n "npn_critique_engagement.admin.report.critiqued"}}:
         {{@row.topics_replied}}
       </span>
+      {{#if @row.top_tags.length}}
+        <span class="npn-admin-outreach__genres">
+          {{i18n "npn_critique_engagement.admin.outreach.posts_to"}}
+          {{#each @row.top_tags as |genre|}}
+            <a class="npn-admin-outreach__genre" href={{tagUrl genre.tag}}>
+              {{genre.tag}}
+              ×{{genre.count}}
+            </a>
+          {{/each}}
+        </span>
+      {{/if}}
       <span class="npn-admin-outreach__last-contacted">
         {{#if @row.last_outreach}}
           {{i18n "npn_critique_engagement.admin.outreach.last_contacted"}}

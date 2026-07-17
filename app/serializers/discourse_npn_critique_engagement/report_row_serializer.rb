@@ -16,7 +16,8 @@ module DiscourseNpnCritiqueEngagement
                :awards_received,
                :ratio,
                :trend,
-               :last_outreach
+               :last_outreach,
+               :top_tags
 
     def username
       object.user.username
@@ -58,6 +59,14 @@ module DiscourseNpnCritiqueEngagement
 
     def include_last_outreach?
       @options[:outreach_logs]&.key?(object.user_id)
+    end
+
+    def top_tags
+      @options[:top_tags]&.dig(object.user_id)
+    end
+
+    def include_top_tags?
+      @options[:top_tags]&.key?(object.user_id)
     end
   end
 end

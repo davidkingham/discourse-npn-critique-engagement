@@ -153,6 +153,7 @@ en:
           cancel: "Cancel"
           notes_title: "Contact log"
           note_saved: "Outreach note saved."
+          posts_to: "Posts to:"
           welcome_title: "New members to welcome"
           welcome_description: "New members already giving critiques — a personal hello goes a long way."
           welcome_empty: "No new members with critique activity right now."
