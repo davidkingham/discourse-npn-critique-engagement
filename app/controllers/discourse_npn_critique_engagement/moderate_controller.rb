@@ -67,6 +67,7 @@ module DiscourseNpnCritiqueEngagement
               AND p.user_id <> t.user_id
               AND LENGTH(REGEXP_REPLACE(p.raw, :quote_pattern, '', 'gi')) >= :min_length
           )
+          #{coverage_excluded_tags_fragment}
       SQL
 
       topics =
@@ -155,7 +156,31 @@ module DiscourseNpnCritiqueEngagement
     end
 
     def genre_tags(topics)
-      topics.flat_map { |topic| topic.tags.map(&:name) }.uniq.sort - [pick_tag]
+      topics.flat_map { |topic| topic.tags.map(&:name) }.uniq.sort - [pick_tag] - excluded_pick_tags
+    end
+
+    def excluded_pick_tags
+      SiteSetting.npn_critique_pick_excluded_tags.to_s.split("|")
+    end
+
+    # Weekly-challenge threads (and anything else listed) don't need critique
+    # coverage. The fragment is a trusted constant shape; tag names travel as
+    # a bind param.
+    def coverage_excluded_tags_fragment
+      return "" if coverage_excluded_tags.blank?
+
+      <<~SQL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM topic_tags tt
+          JOIN tags excluded ON excluded.id = tt.tag_id
+          WHERE tt.topic_id = t.id AND excluded.name IN (:excluded_tags)
+        )
+      SQL
+    end
+
+    def coverage_excluded_tags
+      SiteSetting.npn_critique_coverage_excluded_tags.to_s.split("|")
     end
 
     def mini_rows(scope)
@@ -168,12 +193,14 @@ module DiscourseNpnCritiqueEngagement
     end
 
     def coverage_params
-      {
+      params = {
         category_ids: category_ids,
         cutoff: SiteSetting.npn_critique_coverage_days.days.ago,
         quote_pattern: Scorer::QUOTE_PATTERN,
         min_length: SiteSetting.npn_critique_min_reply_length,
       }
+      params[:excluded_tags] = coverage_excluded_tags if coverage_excluded_tags.present?
+      params
     end
 
     def week_start

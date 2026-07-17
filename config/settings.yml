@@ -172,6 +172,14 @@ plugins:
     min: 1
     max: 90
 
+  npn_critique_coverage_excluded_tags:
+    default: "weekly-challenge"
+    type: tag_list
+
+  npn_critique_pick_excluded_tags:
+    default: "black-and-white|grand|intimate"
+    type: tag_list
+
   npn_critique_editors_pick_badge_name:
     default: "Editor's Pick"
 

@@ -371,9 +371,15 @@
 
   &__panels {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(20em, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(22em, 1fr));
     gap: 1em;
     align-items: start;
+  }
+
+  &__side {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
   }
 
   &__panel {
@@ -388,10 +394,6 @@
       font-size: var(--font-up-1);
       margin-block-start: 0;
     }
-  }
-
-  &__coverage {
-    grid-row: span 2;
   }
 
   &__count {

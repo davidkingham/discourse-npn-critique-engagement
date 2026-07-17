@@ -1,4 +1,5 @@
 import { LinkTo } from "@ember/routing";
+import getURL from "discourse/lib/get-url";
 import { userPath } from "discourse/lib/url";
 import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-template";
 import dFormatDate from "discourse/ui-kit/helpers/d-format-date";
@@ -8,6 +9,10 @@ import NpnTierBadge from "discourse/plugins/discourse-npn-critique-engagement/di
 
 function rowClass(topic) {
   return `npn-moderate__coverage-row ${topic.new_member ? "--urgent" : ""}`;
+}
+
+function tagUrl(tag) {
+  return getURL(`/tag/${tag}`);
 }
 
 export default <template>
@@ -83,130 +88,136 @@ export default <template>
         {{/if}}
       </section>
 
-      <section class="npn-moderate__panel npn-moderate__picks">
-        <h2>{{i18n "npn_critique_engagement.moderate.picks_title"}}</h2>
-        <p class="npn-moderate__hint">
-          {{i18n "npn_critique_engagement.moderate.picks_hint"}}
-        </p>
-        {{#if @model.pick_status.length}}
-          <ul class="npn-moderate__pick-list">
-            {{#each @model.pick_status as |genre|}}
-              <li class="npn-moderate__pick-row">
-                <span class="npn-moderate__pick-tag">{{genre.tag}}</span>
-                {{#if genre.picked}}
-                  <a class="npn-moderate__pick-done" href={{genre.topic_url}}>
-                    {{dIcon "check"}}
-                    {{i18n
-                      "npn_critique_engagement.moderate.picked_by"
-                      username=genre.picked_by
-                    }}
+      <div class="npn-moderate__side">
+        <section class="npn-moderate__panel npn-moderate__picks">
+          <h2>{{i18n "npn_critique_engagement.moderate.picks_title"}}</h2>
+          <p class="npn-moderate__hint">
+            {{i18n "npn_critique_engagement.moderate.picks_hint"}}
+          </p>
+          {{#if @model.pick_status.length}}
+            <ul class="npn-moderate__pick-list">
+              {{#each @model.pick_status as |genre|}}
+                <li class="npn-moderate__pick-row">
+                  <a class="npn-moderate__pick-tag" href={{tagUrl genre.tag}}>
+                    {{genre.tag}}
                   </a>
-                {{else}}
-                  <span class="npn-moderate__pick-open">
-                    {{i18n "npn_critique_engagement.moderate.pick_open"}}
+                  {{#if genre.picked}}
+                    <a class="npn-moderate__pick-done" href={{genre.topic_url}}>
+                      {{dIcon "check"}}
+                      {{i18n
+                        "npn_critique_engagement.moderate.picked_by"
+                        username=genre.picked_by
+                      }}
+                    </a>
+                  {{else}}
+                    <span class="npn-moderate__pick-open">
+                      {{i18n "npn_critique_engagement.moderate.pick_open"}}
+                    </span>
+                  {{/if}}
+                </li>
+              {{/each}}
+            </ul>
+          {{else}}
+            <p class="npn-moderate__empty">
+              {{i18n "npn_critique_engagement.moderate.picks_empty"}}
+            </p>
+          {{/if}}
+          <LinkTo
+            @route="critique-editors-picks"
+            class="npn-moderate__panel-link"
+          >
+            {{i18n "npn_critique_engagement.moderate.picks_link"}}
+            {{dIcon "chevron-right"}}
+          </LinkTo>
+        </section>
+
+        <section class="npn-moderate__panel npn-moderate__outreach">
+          <h2>{{i18n "npn_critique_engagement.moderate.outreach_title"}}</h2>
+          {{#if @model.outreach.length}}
+            <ul class="npn-moderate__mini-list">
+              {{#each @model.outreach as |row|}}
+                <li class="npn-moderate__mini-row">
+                  <a
+                    class="npn-moderate__member"
+                    href={{userPath row.username}}
+                    data-user-card={{row.username}}
+                  >
+                    {{dBoundAvatarTemplate row.avatar_template "tiny"}}
+                    <span>{{row.username}}</span>
+                  </a>
+                  <span class="npn-moderate__mini-meta">
+                    {{i18n "npn_critique_engagement.admin.report.shared"}}:
+                    {{row.created_topics}}
+                    ·
+                    {{i18n "npn_critique_engagement.admin.report.critiqued"}}:
+                    {{row.topics_replied}}
                   </span>
-                {{/if}}
-              </li>
-            {{/each}}
-          </ul>
-        {{else}}
-          <p class="npn-moderate__empty">
-            {{i18n "npn_critique_engagement.moderate.picks_empty"}}
-          </p>
-        {{/if}}
-        <LinkTo
-          @route="critique-editors-picks"
-          class="npn-moderate__panel-link"
-        >
-          {{i18n "npn_critique_engagement.moderate.picks_link"}}
-          {{dIcon "chevron-right"}}
-        </LinkTo>
-      </section>
+                  <span class="npn-moderate__mini-contact">
+                    {{#if row.last_outreach}}
+                      {{dFormatDate row.last_outreach.created_at format="tiny"}}
+                    {{else}}
+                      {{i18n
+                        "npn_critique_engagement.admin.outreach.never_contacted"
+                      }}
+                    {{/if}}
+                  </span>
+                </li>
+              {{/each}}
+            </ul>
+          {{else}}
+            <p class="npn-moderate__empty">
+              {{i18n "npn_critique_engagement.admin.outreach.empty"}}
+            </p>
+          {{/if}}
+          <LinkTo @route="critique-outreach" class="npn-moderate__panel-link">
+            {{i18n "npn_critique_engagement.moderate.outreach_link"}}
+            {{dIcon "chevron-right"}}
+          </LinkTo>
+        </section>
 
-      <section class="npn-moderate__panel npn-moderate__outreach">
-        <h2>{{i18n "npn_critique_engagement.moderate.outreach_title"}}</h2>
-        {{#if @model.outreach.length}}
-          <ul class="npn-moderate__mini-list">
-            {{#each @model.outreach as |row|}}
-              <li class="npn-moderate__mini-row">
-                <a
-                  class="npn-moderate__member"
-                  href={{userPath row.username}}
-                  data-user-card={{row.username}}
-                >
-                  {{dBoundAvatarTemplate row.avatar_template "tiny"}}
-                  <span>{{row.username}}</span>
-                </a>
-                <span class="npn-moderate__mini-meta">
-                  {{i18n "npn_critique_engagement.admin.report.shared"}}:
-                  {{row.created_topics}}
-                  ·
-                  {{i18n "npn_critique_engagement.admin.report.critiqued"}}:
-                  {{row.topics_replied}}
-                </span>
-                <span class="npn-moderate__mini-contact">
-                  {{#if row.last_outreach}}
-                    {{dFormatDate row.last_outreach.created_at format="tiny"}}
-                  {{else}}
-                    {{i18n
-                      "npn_critique_engagement.admin.outreach.never_contacted"
-                    }}
-                  {{/if}}
-                </span>
-              </li>
-            {{/each}}
-          </ul>
-        {{else}}
-          <p class="npn-moderate__empty">
-            {{i18n "npn_critique_engagement.admin.outreach.empty"}}
-          </p>
-        {{/if}}
-        <LinkTo @route="critique-outreach" class="npn-moderate__panel-link">
-          {{i18n "npn_critique_engagement.moderate.outreach_link"}}
-          {{dIcon "chevron-right"}}
-        </LinkTo>
-      </section>
-
-      <section class="npn-moderate__panel npn-moderate__welcome">
-        <h2>{{i18n "npn_critique_engagement.admin.outreach.welcome_title"}}</h2>
-        {{#if @model.welcome.length}}
-          <ul class="npn-moderate__mini-list">
-            {{#each @model.welcome as |row|}}
-              <li class="npn-moderate__mini-row">
-                <a
-                  class="npn-moderate__member"
-                  href={{userPath row.username}}
-                  data-user-card={{row.username}}
-                >
-                  {{dBoundAvatarTemplate row.avatar_template "tiny"}}
-                  <span>{{row.username}}</span>
-                </a>
-                <span class="npn-moderate__mini-meta">
-                  {{i18n "npn_critique_engagement.admin.report.critiqued"}}:
-                  {{row.topics_replied}}
-                </span>
-                <span class="npn-moderate__mini-contact">
-                  {{#if row.last_outreach}}
-                    {{dFormatDate row.last_outreach.created_at format="tiny"}}
-                  {{else}}
-                    {{i18n
-                      "npn_critique_engagement.admin.outreach.never_contacted"
-                    }}
-                  {{/if}}
-                </span>
-              </li>
-            {{/each}}
-          </ul>
-        {{else}}
-          <p class="npn-moderate__empty">
-            {{i18n "npn_critique_engagement.admin.outreach.welcome_empty"}}
-          </p>
-        {{/if}}
-        <LinkTo @route="critique-outreach" class="npn-moderate__panel-link">
-          {{i18n "npn_critique_engagement.moderate.outreach_link"}}
-          {{dIcon "chevron-right"}}
-        </LinkTo>
-      </section>
+        <section class="npn-moderate__panel npn-moderate__welcome">
+          <h2>{{i18n
+              "npn_critique_engagement.admin.outreach.welcome_title"
+            }}</h2>
+          {{#if @model.welcome.length}}
+            <ul class="npn-moderate__mini-list">
+              {{#each @model.welcome as |row|}}
+                <li class="npn-moderate__mini-row">
+                  <a
+                    class="npn-moderate__member"
+                    href={{userPath row.username}}
+                    data-user-card={{row.username}}
+                  >
+                    {{dBoundAvatarTemplate row.avatar_template "tiny"}}
+                    <span>{{row.username}}</span>
+                  </a>
+                  <span class="npn-moderate__mini-meta">
+                    {{i18n "npn_critique_engagement.admin.report.critiqued"}}:
+                    {{row.topics_replied}}
+                  </span>
+                  <span class="npn-moderate__mini-contact">
+                    {{#if row.last_outreach}}
+                      {{dFormatDate row.last_outreach.created_at format="tiny"}}
+                    {{else}}
+                      {{i18n
+                        "npn_critique_engagement.admin.outreach.never_contacted"
+                      }}
+                    {{/if}}
+                  </span>
+                </li>
+              {{/each}}
+            </ul>
+          {{else}}
+            <p class="npn-moderate__empty">
+              {{i18n "npn_critique_engagement.admin.outreach.welcome_empty"}}
+            </p>
+          {{/if}}
+          <LinkTo @route="critique-outreach" class="npn-moderate__panel-link">
+            {{i18n "npn_critique_engagement.moderate.outreach_link"}}
+            {{dIcon "chevron-right"}}
+          </LinkTo>
+        </section>
+      </div>
     </div>
   </section>
 </template>

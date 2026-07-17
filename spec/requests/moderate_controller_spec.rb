@@ -73,6 +73,15 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
 
       expect(response.parsed_body["coverage"]["total"]).to eq(0)
     end
+
+    it "ignores topics carrying a coverage-excluded tag" do
+      challenge_tag = Fabricate(:tag, name: "weekly-challenge")
+      make_image_topic(veteran, tag: challenge_tag)
+
+      get "/critique-engagement/moderate.json"
+
+      expect(response.parsed_body["coverage"]["total"]).to eq(0)
+    end
   end
 
   describe "pick status" do
@@ -91,6 +100,16 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       expect(status["landscape"]["picked"]).to eq(true)
       expect(status["landscape"]["picked_by"]).to eq(moderator.username)
       expect(status["wildlife"]["picked"]).to eq(false)
+    end
+
+    it "keeps style and attribute tags off the pick board" do
+      style_tag = Fabricate(:tag, name: "black-and-white")
+      make_image_topic(veteran, tag: style_tag, created_at: 1.hour.ago)
+      make_image_topic(star_member, created_at: 1.hour.ago)
+
+      get "/critique-engagement/moderate.json"
+
+      expect(response.parsed_body["pick_status"].map { |genre| genre["tag"] }).to eq(["landscape"])
     end
   end
 
