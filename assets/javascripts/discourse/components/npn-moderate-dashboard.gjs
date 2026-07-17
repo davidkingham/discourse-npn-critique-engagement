@@ -1,5 +1,5 @@
+import { hash } from "@ember/helper";
 import { LinkTo } from "@ember/routing";
-import getURL from "discourse/lib/get-url";
 import { userPath } from "discourse/lib/url";
 import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-template";
 import dFormatDate from "discourse/ui-kit/helpers/d-format-date";
@@ -9,10 +9,6 @@ import NpnTierBadge from "discourse/plugins/discourse-npn-critique-engagement/di
 
 function rowClass(topic) {
   return `npn-moderate__coverage-row ${topic.new_member ? "--urgent" : ""}`;
-}
-
-function tagUrl(tag) {
-  return getURL(`/tag/${tag}`);
 }
 
 export default <template>
@@ -161,9 +157,13 @@ export default <template>
             <ul class="npn-moderate__pick-list">
               {{#each @model.pick_status as |genre|}}
                 <li class="npn-moderate__pick-row">
-                  <a class="npn-moderate__pick-tag" href={{tagUrl genre.tag}}>
+                  <LinkTo
+                    @route="critique-editors-picks"
+                    @query={{hash tag=genre.tag}}
+                    class="npn-moderate__pick-tag"
+                  >
                     {{genre.tag}}
-                  </a>
+                  </LinkTo>
                   {{#if genre.picked}}
                     <a class="npn-moderate__pick-done" href={{genre.topic_url}}>
                       {{dIcon "check"}}

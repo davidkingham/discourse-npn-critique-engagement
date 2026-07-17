@@ -8,7 +8,11 @@ export default class CritiqueEditorsPicksRoute extends DiscourseRoute {
   @service router;
   @service siteSettings;
 
-  beforeModel() {
+  queryParams = {
+    tag: { refreshModel: true },
+  };
+
+beforeModel() {
     if (
       !this.siteSettings.npn_critique_engagement_enabled ||
       !this.currentUser?.staff
@@ -17,8 +21,12 @@ export default class CritiqueEditorsPicksRoute extends DiscourseRoute {
     }
   }
 
-  model() {
-    return ajax("/moderate/editors-picks.json");
+  
+
+  model(params) {
+    return ajax("/moderate/editors-picks.json", {
+      data: params.tag ? { tag: params.tag } : {},
+    });
   }
 
   titleToken() {
