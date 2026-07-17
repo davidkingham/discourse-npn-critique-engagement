@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# Referenced in the class body below, and this file can be autoloaded during
+# migrations before after_initialize has required the libs.
+require_relative "../../../lib/discourse_npn_critique_engagement/editors_pick"
+
 module DiscourseNpnCritiqueEngagement
   # The weekly editors' pick review queue: one genre tag, one Sunday-anchored
   # week, every image topic with its poster's engagement standing beside it.
