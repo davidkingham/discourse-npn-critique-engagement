@@ -12,6 +12,7 @@ import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-templa
 import dFormatDate from "discourse/ui-kit/helpers/d-format-date";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
+import NpnEditorsPickModal from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-editors-pick-modal";
 import NpnTierBadge from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-tier-badge";
 
 function weekLabel(weekStart) {
@@ -32,7 +33,7 @@ function shiftWeek(weekStart, days) {
 }
 
 export default class NpnEditorsPicks extends Component {
-  @service dialog;
+  @service modal;
 
   @tracked dataOverride = null;
   @tracked loading = false;
@@ -76,14 +77,19 @@ export default class NpnEditorsPicks extends Component {
 
   @action
   pick(topic) {
-    this.dialog.yesNoConfirm({
-      message: i18n("npn_critique_engagement.editors_picks.confirm_pick"),
-      didConfirm: async () => {
-        try {
-          const result = await ajax("/moderate/editors-picks/pick", {
-            type: "POST",
-            data: { topic_id: topic.id },
-          });
+    const options = topic.genre_options ?? [];
+    let defaultGenre = null;
+    if (this.data.tag && options.includes(this.data.tag)) {
+      defaultGenre = this.data.tag;
+    } else if (options.length === 1) {
+      defaultGenre = options[0];
+    }
+
+    this.modal.show(NpnEditorsPickModal, {
+      model: {
+        topic,
+        defaultGenre,
+        onPicked: (result) => {
           this.dataOverride = {
             ...this.data,
             topics: this.data.topics.map((existing) =>
@@ -92,9 +98,7 @@ export default class NpnEditorsPicks extends Component {
                 : existing
             ),
           };
-        } catch (error) {
-          popupAjaxError(error);
-        }
+        },
       },
     });
   }
@@ -201,7 +205,13 @@ export default class NpnEditorsPicks extends Component {
                 {{#if topic.picked}}
                   <div class="npn-editors-picks__picked">
                     {{dIcon "star"}}
-                    {{#if topic.picked_by}}
+                    {{#if topic.picked_by.genre}}
+                      {{i18n
+                        "npn_critique_engagement.editors_picks.picked_for"
+                        username=topic.picked_by.username
+                        genre=topic.picked_by.genre
+                      }}
+                    {{else if topic.picked_by}}
                       {{i18n
                         "npn_critique_engagement.editors_picks.picked_by"
                         username=topic.picked_by.username

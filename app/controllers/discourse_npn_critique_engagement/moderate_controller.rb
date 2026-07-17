@@ -224,10 +224,27 @@ module DiscourseNpnCritiqueEngagement
           .includes(:user)
           .order(:created_at)
           .index_by(&:topic_id)
+      note_genres =
+        PostCustomField
+          .where(
+            post_id: pick_notes.values.map(&:id),
+            name: EditorsPicksController::PICK_GENRE_FIELD,
+          )
+          .pluck(:post_id, :value)
+          .to_h
 
       genre_tags(topics).map do |tag|
         tagged = topics.select { |topic| topic.tags.map(&:name).include?(tag) }
-        picked = tagged.find { |topic| picked_topic_ids.include?(topic.id) }
+        # A pick declared for a genre fills only that genre's slot — tags
+        # overlap, the declaration doesn't. Picks made before genres were
+        # recorded fall back to counting for every genre they're tagged with.
+        picked =
+          tagged.find do |topic|
+            next false if !picked_topic_ids.include?(topic.id)
+            note = pick_notes[topic.id]
+            declared = note && note_genres[note.id]
+            declared.nil? || declared == tag
+          end
         note = picked && pick_notes[picked.id]
 
         {

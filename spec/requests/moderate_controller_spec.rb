@@ -162,6 +162,24 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       expect(status["wildlife"]["picked"]).to eq(false)
     end
 
+    it "counts a cross-tagged pick only for its declared genre" do
+      wildlife_tag = Fabricate(:tag, name: "wildlife")
+      cross_tagged = make_image_topic(veteran, created_at: 1.hour.ago)
+      cross_tagged.tags << wildlife_tag
+
+      post "/moderate/editors-picks/pick.json",
+           params: {
+             topic_id: cross_tagged.id,
+             genre: "wildlife",
+           }
+
+      get "/moderate.json"
+
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["wildlife"]["picked"]).to eq(true)
+      expect(status["landscape"]["picked"]).to eq(false)
+    end
+
     it "keeps style and attribute tags off the pick board" do
       style_tag = Fabricate(:tag, name: "black-and-white")
       make_image_topic(veteran, tag: style_tag, created_at: 1.hour.ago)

@@ -157,6 +157,39 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       expect(Topic.private_messages.count).to eq(0)
     end
 
+    it "records the declared genre and posts the public reason as the note body" do
+      topic.tags << wildlife_tag
+
+      post "/moderate/editors-picks/pick.json",
+           params: {
+             topic_id: topic.id,
+             genre: "wildlife",
+             reason: "Wonderful light and a decisive moment.",
+           }
+
+      expect(response.status).to eq(200)
+      expect(response.parsed_body["picked_by"]["genre"]).to eq("wildlife")
+
+      note = topic.posts.order(:created_at).last
+      expect(note.raw).to eq("Wonderful light and a decisive moment.")
+      expect(note.custom_fields["npn_editors_pick_genre"]).to eq("wildlife")
+
+      get "/moderate/editors-picks.json"
+      picked = response.parsed_body["topics"].find { |entry| entry["id"] == topic.id }
+      expect(picked["picked_by"]["genre"]).to eq("wildlife")
+      expect(picked["genre_options"]).to contain_exactly("landscape", "wildlife")
+    end
+
+    it "rejects a genre the topic isn't tagged with and an overlong reason" do
+      post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id, genre: "wildlife" }
+      expect(response.status).to eq(400)
+
+      post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id, reason: "a" * 1001 }
+      expect(response.status).to eq(400)
+
+      expect(topic.reload.tags.map(&:name)).not_to include("editors-pick")
+    end
+
     it "rejects picking twice" do
       post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id }
       post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id }

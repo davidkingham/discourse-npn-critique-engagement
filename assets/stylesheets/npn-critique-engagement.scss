@@ -656,6 +656,36 @@
   }
 }
 
+.npn-editors-pick-modal {
+  &__topic {
+    color: var(--primary-high);
+    overflow-wrap: anywhere;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35em;
+    margin-block-end: 1em;
+
+    label {
+      font-weight: bold;
+      margin: 0;
+    }
+  }
+
+  &__reason {
+    width: 100%;
+    min-height: 5em;
+  }
+
+  &__hint {
+    margin: 0;
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
+  }
+}
+
 .npn-admin-report {
   &__stats {
     display: grid;

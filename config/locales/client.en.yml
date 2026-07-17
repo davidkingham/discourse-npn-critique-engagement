@@ -108,7 +108,15 @@ en:
         no_images: "No images posted this week for this selection."
         pick: "Pick"
         picked_by: "Picked by @%{username}"
-        confirm_pick: "Tag this as an Editor's Pick and post a public note on the topic?"
+        picked_for: "Picked by @%{username} for %{genre}"
+        pick_modal:
+          title: "Make this an Editor's Pick"
+          genre_label: "Which category is this pick for?"
+          genre_hint: "Just for moderators — tags overlap, so this keeps each category's pick clear."
+          reason_label: "Why this image? (optional)"
+          reason_placeholder: "What made it stand out…"
+          reason_hint: "Posted publicly in the pick note on the topic."
+          submit: "Make the pick"
         no_standing: "No recent standing"
         posted: "Posted"
       admin:

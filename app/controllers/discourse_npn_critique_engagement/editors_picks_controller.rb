@@ -11,6 +11,8 @@ module DiscourseNpnCritiqueEngagement
     before_action :ensure_staff
 
     PICK_ACTION_CODE = "npn_editors_pick"
+    PICK_GENRE_FIELD = "npn_editors_pick_genre"
+    REASON_MAX_LENGTH = 1000
 
     # GET /critique-engagement/editors-picks?week=YYYY-MM-DD&tag=landscape
     def show
@@ -45,7 +47,10 @@ module DiscourseNpnCritiqueEngagement
     # POST /critique-engagement/editors-picks/pick
     # Applies the editors-pick tag and posts a public small-action note —
     # replacing the old manual whisper — so the pick and the picker are
-    # visible on the topic itself.
+    # visible on the topic itself. Genres overlap on cross-tagged images, so
+    # the moderator declares which genre the pick fills (stored on the note
+    # for the other moderators), and can say why publicly — the reason
+    # becomes the note's body.
     def pick
       topic = Topic.find_by(id: params.require(:topic_id))
       raise Discourse::NotFound if topic.nil? || !category_ids.include?(topic.category_id)
@@ -59,13 +64,25 @@ module DiscourseNpnCritiqueEngagement
         )
       end
 
+      genre = params[:genre].presence
+      if genre.present? && !genre_options(topic).include?(genre)
+        raise Discourse::InvalidParameters.new(:genre)
+      end
+      reason = params[:reason].to_s.strip.presence
+      raise Discourse::InvalidParameters.new(:reason) if reason && reason.length > REASON_MAX_LENGTH
+
       DiscourseTagging.tag_topic_by_names(topic, guardian, [pick_tag], append: true)
-      topic.add_moderator_post(
-        current_user,
-        nil,
-        post_type: Post.types[:small_action],
-        action_code: PICK_ACTION_CODE,
-      )
+      note =
+        topic.add_moderator_post(
+          current_user,
+          reason,
+          post_type: Post.types[:small_action],
+          action_code: PICK_ACTION_CODE,
+        )
+      if genre && note
+        note.custom_fields[PICK_GENRE_FIELD] = genre
+        note.save_custom_fields
+      end
       grant_pick_badge(topic)
       send_pick_pm(topic)
 
@@ -74,6 +91,7 @@ module DiscourseNpnCritiqueEngagement
                picked_by: {
                  username: current_user.username,
                  picked_at: Time.zone.now,
+                 genre: genre,
                },
              }
     end
@@ -147,15 +165,22 @@ module DiscourseNpnCritiqueEngagement
           .includes(:user)
           .order(:created_at)
           .index_by(&:topic_id)
+      note_genres =
+        PostCustomField
+          .where(post_id: pick_notes.values.map(&:id), name: PICK_GENRE_FIELD)
+          .pluck(:post_id, :value)
+          .to_h
 
       topics
-        .map { |topic| topic_payload(topic, scores[topic.user_id], pick_notes[topic.id]) }
+        .map do |topic|
+          topic_payload(topic, scores[topic.user_id], pick_notes[topic.id], note_genres)
+        end
         .sort_by do |payload|
           [payload[:score] ? -payload[:score][:score] : Float::INFINITY, payload[:created_at]]
         end
     end
 
-    def topic_payload(topic, score, pick_note)
+    def topic_payload(topic, score, pick_note, note_genres = {})
       {
         id: topic.id,
         title: topic.title,
@@ -174,10 +199,22 @@ module DiscourseNpnCritiqueEngagement
               created_topics: score.created_topics,
               ratio: score.ratio.round(2),
             },
+        genre_options: genre_options(topic),
         picked: topic.tags.map(&:name).include?(pick_tag),
         picked_by:
-          pick_note && { username: pick_note.user&.username, picked_at: pick_note.created_at },
+          pick_note &&
+            {
+              username: pick_note.user&.username,
+              picked_at: pick_note.created_at,
+              genre: note_genres[pick_note.id],
+            },
       }
+    end
+
+    # The genres this image could fill a pick slot for: its own tags, minus
+    # the pick tag and the style/attribute tags that aren't pick genres.
+    def genre_options(topic)
+      topic.tags.map(&:name).sort - GenreTags.non_genre_tags
     end
 
     def pick_tag
