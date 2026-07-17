@@ -42,6 +42,7 @@ after_initialize do
   require_relative "app/models/discourse_npn_critique_engagement/score"
   require_relative "app/models/discourse_npn_critique_engagement/monthly_snapshot"
   require_relative "app/models/discourse_npn_critique_engagement/outreach_log"
+  require_relative "app/models/discourse_npn_critique_engagement/outreach_claim"
   require_relative "app/serializers/discourse_npn_critique_engagement/leaderboard_entry_serializer"
   require_relative "app/serializers/discourse_npn_critique_engagement/impact_row_serializer"
   require_relative "app/serializers/discourse_npn_critique_engagement/snapshot_row_serializer"

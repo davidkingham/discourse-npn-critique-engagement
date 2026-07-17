@@ -110,6 +110,81 @@ describe DiscourseNpnCritiqueEngagement::Admin::OutreachController do
     expect(response.parsed_body["notes"].first["note"]).to eq("Talked at the meetup")
   end
 
+  describe "claims" do
+    fab!(:other_moderator, :moderator)
+
+    before { sign_in(moderator) }
+
+    it "lets a moderator claim an outreach, visible to everyone" do
+      post "/admin/plugins/critique-engagement/outreach/claim.json", params: { user_id: member.id }
+
+      expect(response.status).to eq(201)
+      expect(response.parsed_body["mine"]).to eq(true)
+
+      sign_in(other_moderator)
+      get "/admin/plugins/critique-engagement/outreach.json"
+      row = response.parsed_body["rows"].find { |entry| entry["username"] == member.username }
+      expect(row["claim"]["username"]).to eq(moderator.username)
+      expect(row["claim"]["mine"]).to eq(false)
+    end
+
+    it "rejects claiming a member someone else already claimed" do
+      DiscourseNpnCritiqueEngagement::OutreachClaim.create!(
+        user_id: member.id,
+        staff_user: other_moderator,
+      )
+
+      post "/admin/plugins/critique-engagement/outreach/claim.json", params: { user_id: member.id }
+
+      expect(response.status).to eq(409)
+    end
+
+    it "lets a stale claim be taken over" do
+      DiscourseNpnCritiqueEngagement::OutreachClaim.create!(
+        user_id: member.id,
+        staff_user: other_moderator,
+        created_at: 10.days.ago,
+      )
+
+      post "/admin/plugins/critique-engagement/outreach/claim.json", params: { user_id: member.id }
+
+      expect(response.status).to eq(201)
+      expect(
+        DiscourseNpnCritiqueEngagement::OutreachClaim.find_by(user_id: member.id).staff_user_id,
+      ).to eq(moderator.id)
+    end
+
+    it "resolves the claim when the contact note is logged" do
+      DiscourseNpnCritiqueEngagement::OutreachClaim.create!(
+        user_id: member.id,
+        staff_user: moderator,
+      )
+
+      post "/admin/plugins/critique-engagement/outreach/notes.json",
+           params: {
+             user_id: member.id,
+             note: "Sent a friendly PM",
+           }
+
+      expect(DiscourseNpnCritiqueEngagement::OutreachClaim.where(user_id: member.id)).to be_empty
+    end
+
+    it "lets the claimer release their own claim" do
+      DiscourseNpnCritiqueEngagement::OutreachClaim.create!(
+        user_id: member.id,
+        staff_user: moderator,
+      )
+
+      delete "/admin/plugins/critique-engagement/outreach/claim.json",
+             params: {
+               user_id: member.id,
+             }
+
+      expect(response.status).to eq(204)
+      expect(DiscourseNpnCritiqueEngagement::OutreachClaim.where(user_id: member.id)).to be_empty
+    end
+  end
+
   it "rejects blank notes" do
     sign_in(moderator)
 

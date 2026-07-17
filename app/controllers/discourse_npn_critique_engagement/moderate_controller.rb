@@ -263,6 +263,7 @@ module DiscourseNpnCritiqueEngagement
         rows,
         ReportRowSerializer,
         outreach_logs: OutreachLog.latest_for(rows.map(&:user_id)),
+        claims: OutreachClaim.active_for(rows.map(&:user_id)),
       )
     end
 

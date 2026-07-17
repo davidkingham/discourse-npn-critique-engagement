@@ -59,6 +59,32 @@ const OutreachRow = <template>
           {{i18n "npn_critique_engagement.admin.outreach.never_contacted"}}
         {{/if}}
       </span>
+      {{#if @row.claim}}
+        {{#if @row.claim.mine}}
+          <span class="npn-admin-outreach__claim --mine">
+            {{i18n "npn_critique_engagement.admin.outreach.claim_yours"}}
+          </span>
+          <DButton
+            @action={{fn @unclaim @row}}
+            @label="npn_critique_engagement.admin.outreach.claim_release"
+            class="btn-flat btn-small npn-admin-outreach__unclaim"
+          />
+        {{else}}
+          <span class="npn-admin-outreach__claim">
+            {{i18n
+              "npn_critique_engagement.admin.outreach.claimed_by"
+              username=@row.claim.username
+            }}
+          </span>
+        {{/if}}
+      {{else}}
+        <DButton
+          @action={{fn @claim @row}}
+          @label="npn_critique_engagement.admin.outreach.claim"
+          @icon="hand-holding-heart"
+          class="btn-small npn-admin-outreach__claim-button"
+        />
+      {{/if}}
       <DButton
         @action={{fn @toggleNotes @row}}
         @label="npn_critique_engagement.admin.outreach.add_note"
@@ -156,12 +182,8 @@ export default class NpnCritiqueOutreach extends Component {
         }
       );
       this.notes = [saved, ...(this.notes ?? [])];
-      const applyNote = (existing) =>
-        existing.user_id === row.user_id
-          ? { ...existing, last_outreach: saved }
-          : existing;
-      this.rowsOverride = this.rows.map(applyNote);
-      this.welcomeRowsOverride = this.welcomeRows.map(applyNote);
+      // Logging the contact also resolves any claim.
+      this.updateRow(row.user_id, { last_outreach: saved, claim: null });
       this.toasts.success({
         data: {
           message: i18n("npn_critique_engagement.admin.outreach.note_saved"),
@@ -169,6 +191,56 @@ export default class NpnCritiqueOutreach extends Component {
       });
     } catch (error) {
       popupAjaxError(error);
+    }
+  }
+
+  @action
+  async claim(row) {
+    try {
+      const result = await ajax(
+        "/admin/plugins/critique-engagement/outreach/claim",
+        {
+          type: "POST",
+          data: { user_id: row.user_id },
+        }
+      );
+      this.updateRow(row.user_id, { claim: result });
+    } catch (error) {
+      popupAjaxError(error);
+      // Someone else likely claimed it first — reload the queues.
+      this.refresh();
+    }
+  }
+
+  @action
+  async unclaim(row) {
+    try {
+      await ajax("/admin/plugins/critique-engagement/outreach/claim", {
+        type: "DELETE",
+        data: { user_id: row.user_id },
+      });
+      this.updateRow(row.user_id, { claim: null });
+    } catch (error) {
+      popupAjaxError(error);
+    }
+  }
+
+  updateRow(userId, patch) {
+    const apply = (existing) =>
+      existing.user_id === userId ? { ...existing, ...patch } : existing;
+    this.rowsOverride = this.rows.map(apply);
+    this.welcomeRowsOverride = this.welcomeRows.map(apply);
+  }
+
+  async refresh() {
+    try {
+      const data = await ajax(
+        "/admin/plugins/critique-engagement/outreach.json"
+      );
+      this.rowsOverride = data.rows;
+      this.welcomeRowsOverride = data.welcome_rows;
+    } catch {
+      // The stale view is still usable; the next visit reloads it anyway.
     }
   }
 
@@ -190,6 +262,8 @@ export default class NpnCritiqueOutreach extends Component {
               @notes={{this.notes}}
               @toggleNotes={{this.toggleNotes}}
               @saveNote={{this.saveNote}}
+              @claim={{this.claim}}
+              @unclaim={{this.unclaim}}
             />
           {{/each}}
         </ul>
@@ -213,6 +287,8 @@ export default class NpnCritiqueOutreach extends Component {
                 @notes={{this.notes}}
                 @toggleNotes={{this.toggleNotes}}
                 @saveNote={{this.saveNote}}
+                @claim={{this.claim}}
+                @unclaim={{this.unclaim}}
               />
             {{/each}}
           </ul>

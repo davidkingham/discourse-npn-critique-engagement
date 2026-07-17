@@ -17,7 +17,8 @@ module DiscourseNpnCritiqueEngagement
                :ratio,
                :trend,
                :last_outreach,
-               :top_tags
+               :top_tags,
+               :claim
 
     def username
       object.user.username
@@ -67,6 +68,20 @@ module DiscourseNpnCritiqueEngagement
 
     def include_top_tags?
       @options[:top_tags]&.key?(object.user_id)
+    end
+
+    def claim
+      record = @options[:claims]&.dig(object.user_id)
+      record &&
+        {
+          username: record.staff_user&.username,
+          claimed_at: record.created_at,
+          mine: record.staff_user_id == scope&.user&.id,
+        }
+    end
+
+    def include_claim?
+      @options[:claims]&.key?(object.user_id)
     end
   end
 end

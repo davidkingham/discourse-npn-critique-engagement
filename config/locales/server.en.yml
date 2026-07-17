@@ -76,6 +76,8 @@ en:
   npn_critique_engagement:
     editors_picks:
       already_picked: "This topic is already an editors' pick."
+    outreach:
+      already_claimed: "@%{username} is already reaching out to this member."
     badges:
       contributor_description: "Reached Healthy critique engagement in a calendar month"
       supporter_description: "Reached Excellent critique engagement in a calendar month"

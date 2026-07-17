@@ -220,7 +220,12 @@ export default <template>
                     {{row.topics_replied}}
                   </span>
                   <span class="npn-moderate__mini-contact">
-                    {{#if row.last_outreach}}
+                    {{#if row.claim}}
+                      {{i18n
+                        "npn_critique_engagement.admin.outreach.claimed_by"
+                        username=row.claim.username
+                      }}
+                    {{else if row.last_outreach}}
                       {{dFormatDate row.last_outreach.created_at format="tiny"}}
                     {{else}}
                       {{i18n

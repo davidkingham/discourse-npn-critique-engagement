@@ -25,5 +25,7 @@ DiscourseNpnCritiqueEngagement::Engine.routes.draw do
     get "/outreach" => "admin/outreach#index"
     get "/outreach/:user_id/notes" => "admin/outreach#notes"
     post "/outreach/notes" => "admin/outreach#create"
+    post "/outreach/claim" => "admin/outreach#claim"
+    delete "/outreach/claim" => "admin/outreach#unclaim"
   end
 end

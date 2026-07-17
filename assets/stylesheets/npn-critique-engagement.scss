@@ -794,6 +794,17 @@
     white-space: nowrap;
   }
 
+  &__claim {
+    font-size: var(--font-down-1);
+    font-weight: bold;
+    color: var(--tertiary);
+    white-space: nowrap;
+
+    &.--mine {
+      color: var(--success);
+    }
+  }
+
   &__toggle {
     margin-inline-start: auto;
   }
