@@ -15,6 +15,8 @@ en:
         label: "Critique engagement (staff only)"
       leaderboard:
         title: "Critique leaderboard"
+        sidebar_text: "Critique leaderboard"
+        sidebar_title: "The most generous critics right now"
         description:
           one: "The most generous critics of the last day. The board rolls continuously — every substantive critique counts, whenever you give it."
           other: "The most generous critics of the last %{count} days. The board rolls continuously — every substantive critique counts, whenever you give it."
@@ -25,6 +27,8 @@ en:
         hall_of_fame_link: "Hall of fame"
       hall_of_fame:
         title: "Hall of fame"
+        sidebar_text: "Hall of fame"
+        sidebar_title: "Honored critics and the best critiques ever written here"
         description: "The members who have carried this community's critique culture, honored permanently."
         pillars_title: "Pillars of the community"
         pillars_empty: "No one has earned the permanent honor yet."
@@ -42,6 +46,7 @@ en:
         title: "Your critique impact"
         nav_label: "Critique impact"
         private_note: "Only you can see this page."
+        leaderboard_link: "See the community leaderboard"
         window:
           one: "Last day"
           other: "Last %{count} days"

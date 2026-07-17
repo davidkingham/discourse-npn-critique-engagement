@@ -1,3 +1,4 @@
+import { LinkTo } from "@ember/routing";
 import { trustHTML } from "@ember/template";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
@@ -54,6 +55,13 @@ export default <template>
         {{dIcon "lock"}}
         {{i18n "npn_critique_engagement.impact.private_note"}}
       </p>
+      <LinkTo
+        @route="critique-leaderboard"
+        class="npn-impact__leaderboard-link"
+      >
+        {{i18n "npn_critique_engagement.impact.leaderboard_link"}}
+        {{dIcon "chevron-right"}}
+      </LinkTo>
     </header>
 
     <p class="npn-impact__next-action" role="note">

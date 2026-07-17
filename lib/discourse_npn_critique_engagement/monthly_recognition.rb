@@ -256,6 +256,7 @@ module DiscourseNpnCritiqueEngagement
           "npn_critique_engagement.highlights_topic.body",
           month: month,
           winners: winners_table(winners),
+          base_url: Discourse.base_url,
         )
       raw += awarded_critiques_section(month)
       if rising_winner

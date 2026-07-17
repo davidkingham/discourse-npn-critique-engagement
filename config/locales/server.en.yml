@@ -110,7 +110,7 @@ en:
 
         %{winners}
 
-        Every substantive critique counts, whenever you give it — visit a few threads and join the conversation.
+        Every substantive critique counts, whenever you give it — visit a few threads and join the conversation. See where you stand on the [leaderboard](%{base_url}/critique-engagement/leaderboard), and browse the [hall of fame](%{base_url}/critique-engagement/hall-of-fame) for the best critiques ever written here.
       rising_line: "🌱 **Rising critic of the month:** @%{username} — %{weighted} weighted critiques in their first weeks. Welcome, and thank you for diving straight in!"
       awarded_section_title: "Most awarded critiques of %{month}"
       awarded_line:
