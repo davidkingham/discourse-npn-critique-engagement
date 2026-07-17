@@ -1,10 +1,14 @@
 // The award rosettes are the community's honors — display them larger than
 // ordinary reactions (heart, etc.) in the list under a post so a given award
 // reads as the badge it is. The rosette emojis are recognizable by their
-// award- name prefix, carried in the emoji image's alt text.
+// award- name prefix, carried in the emoji image's alt text — with or
+// without wrapping colons, depending on the render path.
 .discourse-reactions-list
   .discourse-reactions-list-emoji
-  .emoji[alt^=":award-"] {
+  .emoji[alt^=":award-"],
+.discourse-reactions-list
+  .discourse-reactions-list-emoji
+  .emoji[alt^="award-"] {
   width: 2em;
   height: 2em;
 }
