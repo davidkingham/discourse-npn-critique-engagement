@@ -3,10 +3,15 @@
 // reads as the badge it is. The rosette emojis are recognizable by their
 // award- name prefix, carried in the emoji image's alt text — with or
 // without wrapping colons, depending on the render path.
+// The extra .reactions class outranks the reactions plugin's own 1em rule —
+// equal specificity would lose the source-order tiebreak (plugins load
+// alphabetically, and discourse-reactions loads after this plugin).
 .discourse-reactions-list
+  .reactions
   .discourse-reactions-list-emoji
   .emoji[alt^=":award-"],
 .discourse-reactions-list
+  .reactions
   .discourse-reactions-list-emoji
   .emoji[alt^="award-"] {
   width: 2em;
