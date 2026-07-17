@@ -652,13 +652,25 @@
 
   &__picked {
     display: inline-flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.4em;
     color: var(--success);
     font-weight: bold;
+
+    &.--pending {
+      color: var(--primary-high);
+    }
   }
 
-  &__pick {
+  &__pending-note {
+    font-weight: normal;
+    font-size: var(--font-down-1);
+  }
+
+  &__pick,
+  &__undo,
+  &__remove {
     align-self: flex-start;
   }
 

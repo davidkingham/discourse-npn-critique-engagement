@@ -10,6 +10,7 @@ DiscourseNpnCritiqueEngagement::Engine.routes.draw do
   get "/moderate" => "moderate#show"
   get "/moderate/editors-picks" => "editors_picks#show"
   post "/moderate/editors-picks/pick" => "editors_picks#pick"
+  post "/moderate/editors-picks/unpick" => "editors_picks#unpick"
   get "/moderate/outreach" => "editors_picks#page_shell"
   get "/moderate/report" => "editors_picks#page_shell"
 

@@ -216,22 +216,34 @@ module DiscourseNpnCritiqueEngagement
         topics.select { |topic| topic.tags.map(&:name).include?(pick_tag) }.map(&:id)
       pick_notes =
         Post
-          .where(
-            topic_id: picked_topic_ids,
-            action_code: EditorsPicksController::PICK_ACTION_CODE,
-            deleted_at: nil,
-          )
+          .where(topic_id: picked_topic_ids, action_code: EditorsPick::ACTION_CODE, deleted_at: nil)
           .includes(:user)
           .order(:created_at)
           .index_by(&:topic_id)
       note_genres =
         PostCustomField
-          .where(
-            post_id: pick_notes.values.map(&:id),
-            name: EditorsPicksController::PICK_GENRE_FIELD,
-          )
+          .where(post_id: pick_notes.values.map(&:id), name: EditorsPick::GENRE_FIELD)
           .pluck(:post_id, :value)
           .to_h
+
+      # Finalized and staged picks alike fill a genre slot — a pick in its
+      # undo window must already block a second moderator from double-picking
+      # the genre.
+      pick_infos = {}
+      topics.each do |topic|
+        if picked_topic_ids.include?(topic.id)
+          note = pick_notes[topic.id]
+          pick_infos[topic.id] = {
+            username: note&.user&.username,
+            genre: note && note_genres[note.id],
+          }
+        end
+      end
+      PendingPick
+        .for_topics(topics.map(&:id))
+        .each do |topic_id, pending|
+          pick_infos[topic_id] ||= { username: pending.user&.username, genre: pending.genre }
+        end
 
       genre_tags(topics).map do |tag|
         tagged = topics.select { |topic| topic.tags.map(&:name).include?(tag) }
@@ -240,17 +252,16 @@ module DiscourseNpnCritiqueEngagement
         # recorded fall back to counting for every genre they're tagged with.
         picked =
           tagged.find do |topic|
-            next false if !picked_topic_ids.include?(topic.id)
-            note = pick_notes[topic.id]
-            declared = note && note_genres[note.id]
-            declared.nil? || declared == tag
+            info = pick_infos[topic.id]
+            next false if info.nil?
+            info[:genre].nil? || info[:genre] == tag
           end
-        note = picked && pick_notes[picked.id]
+        info = picked && pick_infos[picked.id]
 
         {
           tag: tag,
           picked: picked.present?,
-          picked_by: note&.user&.username,
+          picked_by: info&.dig(:username),
           topic_url: picked&.relative_url,
         }
       end

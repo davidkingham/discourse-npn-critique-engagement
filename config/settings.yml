@@ -208,6 +208,11 @@ plugins:
   npn_critique_editors_pick_pm_enabled:
     default: true
 
+  npn_critique_pick_finalize_minutes:
+    default: 10
+    min: 0
+    max: 120
+
   # --- Award badges (post-tied, granted monthly from award reactions) ---------
 
   npn_critique_award_badges_enabled:

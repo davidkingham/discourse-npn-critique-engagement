@@ -26,6 +26,7 @@ en:
     npn_critique_claim_reminder_hours: "PM the claiming moderator once, if the contact hasn't been logged after this many hours (checked nightly). 0 disables the reminder."
     npn_critique_editors_pick_badge_name: "Badge granted to the photographer when their image is picked, tied to the image post. Leave blank to skip."
     npn_critique_editors_pick_pm_enabled: "Send the photographer a congratulations PM when their image is picked."
+    npn_critique_pick_finalize_minutes: "Undo window for editors' picks: the tag, public note, badge, and PM only happen after this many minutes, so an accidental pick can be undone before the member ever knows. 0 publishes immediately."
     npn_critique_award_badges_enabled: "Each month, grant post-tied badges for comments that received award reactions during the month."
     npn_critique_award_badge_map: "Which badge each award reaction earns, as reaction=badge name pairs."
     npn_critique_award_badge_min_reactions: "Award reactions a comment needs in a month to earn its badge."
@@ -89,6 +90,7 @@ en:
   npn_critique_engagement:
     editors_picks:
       already_picked: "This topic is already an editors' pick."
+      not_picked: "This topic isn't an editors' pick."
     outreach:
       already_claimed: "@%{username} is already reaching out to this member."
     badges:

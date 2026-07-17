@@ -145,7 +145,10 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
   end
 
   describe "pick status" do
-    before { sign_in(moderator) }
+    before do
+      sign_in(moderator)
+      SiteSetting.npn_critique_pick_finalize_minutes = 0
+    end
 
     it "reports per-genre pick status for the current week" do
       picked_topic = make_image_topic(veteran, created_at: 1.hour.ago)
@@ -153,6 +156,25 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       make_image_topic(star_member, tag: wildlife_tag, created_at: 1.hour.ago)
 
       post "/moderate/editors-picks/pick.json", params: { topic_id: picked_topic.id }
+
+      get "/moderate.json"
+
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["landscape"]["picked"]).to eq(true)
+      expect(status["landscape"]["picked_by"]).to eq(moderator.username)
+      expect(status["wildlife"]["picked"]).to eq(false)
+    end
+
+    it "counts a staged pick for its genre so nobody double-picks it" do
+      wildlife_tag = Fabricate(:tag, name: "wildlife")
+      staged = make_image_topic(veteran, created_at: 1.hour.ago)
+      make_image_topic(star_member, tag: wildlife_tag, created_at: 1.hour.ago)
+      DiscourseNpnCritiqueEngagement::PendingPick.create!(
+        topic_id: staged.id,
+        user_id: moderator.id,
+        genre: "landscape",
+        finalize_at: 10.minutes.from_now,
+      )
 
       get "/moderate.json"
 

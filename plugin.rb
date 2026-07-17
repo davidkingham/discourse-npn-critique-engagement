@@ -23,6 +23,8 @@ register_svg_icon "moon"
 register_svg_icon "seedling"
 register_svg_icon "star"
 register_svg_icon "image"
+register_svg_icon "arrow-rotate-left"
+register_svg_icon "xmark"
 
 module ::DiscourseNpnCritiqueEngagement
   PLUGIN_NAME = "discourse-npn-critique-engagement"
@@ -38,11 +40,13 @@ after_initialize do
   require_relative "lib/discourse_npn_critique_engagement/recognition"
   require_relative "lib/discourse_npn_critique_engagement/awarded_critiques"
   require_relative "lib/discourse_npn_critique_engagement/genre_tags"
+  require_relative "lib/discourse_npn_critique_engagement/editors_pick"
   require_relative "lib/discourse_npn_critique_engagement/monthly_recognition"
   require_relative "app/models/discourse_npn_critique_engagement/score"
   require_relative "app/models/discourse_npn_critique_engagement/monthly_snapshot"
   require_relative "app/models/discourse_npn_critique_engagement/outreach_log"
   require_relative "app/models/discourse_npn_critique_engagement/outreach_claim"
+  require_relative "app/models/discourse_npn_critique_engagement/pending_pick"
   require_relative "app/serializers/discourse_npn_critique_engagement/leaderboard_entry_serializer"
   require_relative "app/serializers/discourse_npn_critique_engagement/impact_row_serializer"
   require_relative "app/serializers/discourse_npn_critique_engagement/snapshot_row_serializer"
@@ -54,6 +58,7 @@ after_initialize do
   require_relative "app/controllers/discourse_npn_critique_engagement/moderate_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/admin/reports_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/admin/outreach_controller"
+  require_relative "app/jobs/regular/npn_finalize_editors_pick"
   require_relative "app/jobs/scheduled/npn_critique_scores_refresh"
 
   add_admin_route "npn_critique_engagement.title",

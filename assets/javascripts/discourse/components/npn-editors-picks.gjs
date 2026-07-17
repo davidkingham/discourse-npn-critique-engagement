@@ -33,6 +33,7 @@ function shiftWeek(weekStart, days) {
 }
 
 export default class NpnEditorsPicks extends Component {
+  @service dialog;
   @service modal;
 
   @tracked dataOverride = null;
@@ -75,6 +76,15 @@ export default class NpnEditorsPicks extends Component {
     this.fetch(this.data.week_start, tag);
   }
 
+  updateTopic(topicId, changes) {
+    this.dataOverride = {
+      ...this.data,
+      topics: this.data.topics.map((existing) =>
+        existing.id === topicId ? { ...existing, ...changes } : existing
+      ),
+    };
+  }
+
   @action
   pick(topic) {
     const options = topic.genre_options ?? [];
@@ -90,15 +100,46 @@ export default class NpnEditorsPicks extends Component {
         topic,
         defaultGenre,
         onPicked: (result) => {
-          this.dataOverride = {
-            ...this.data,
-            topics: this.data.topics.map((existing) =>
-              existing.id === topic.id
-                ? { ...existing, picked: true, picked_by: result.picked_by }
-                : existing
-            ),
-          };
+          if (result.pending) {
+            this.updateTopic(topic.id, { pending: result.pending });
+          } else {
+            this.updateTopic(topic.id, {
+              picked: true,
+              picked_by: result.picked_by,
+            });
+          }
         },
+      },
+    });
+  }
+
+  @action
+  async undo(topic) {
+    try {
+      await ajax("/moderate/editors-picks/unpick", {
+        type: "POST",
+        data: { topic_id: topic.id },
+      });
+      this.updateTopic(topic.id, { pending: null });
+    } catch (error) {
+      popupAjaxError(error);
+    }
+  }
+
+  @action
+  removePick(topic) {
+    this.dialog.yesNoConfirm({
+      message: i18n("npn_critique_engagement.editors_picks.remove_confirm"),
+      didConfirm: async () => {
+        try {
+          await ajax("/moderate/editors-picks/unpick", {
+            type: "POST",
+            data: { topic_id: topic.id },
+          });
+          this.updateTopic(topic.id, { picked: false, picked_by: null });
+        } catch (error) {
+          popupAjaxError(error);
+        }
       },
     });
   }
@@ -202,7 +243,34 @@ export default class NpnEditorsPicks extends Component {
                   {{dFormatDate topic.created_at format="tiny"}}
                 </div>
 
-                {{#if topic.picked}}
+                {{#if topic.pending}}
+                  <div class="npn-editors-picks__picked --pending">
+                    {{dIcon "star"}}
+                    {{#if topic.pending.genre}}
+                      {{i18n
+                        "npn_critique_engagement.editors_picks.picked_for"
+                        username=topic.pending.username
+                        genre=topic.pending.genre
+                      }}
+                    {{else}}
+                      {{i18n
+                        "npn_critique_engagement.editors_picks.picked_by"
+                        username=topic.pending.username
+                      }}
+                    {{/if}}
+                    <span class="npn-editors-picks__pending-note">
+                      {{i18n
+                        "npn_critique_engagement.editors_picks.pending_note"
+                      }}
+                    </span>
+                  </div>
+                  <DButton
+                    @action={{fn this.undo topic}}
+                    @icon="arrow-rotate-left"
+                    @label="npn_critique_engagement.editors_picks.undo"
+                    class="btn-default btn-small npn-editors-picks__undo"
+                  />
+                {{else if topic.picked}}
                   <div class="npn-editors-picks__picked">
                     {{dIcon "star"}}
                     {{#if topic.picked_by.genre}}
@@ -218,6 +286,12 @@ export default class NpnEditorsPicks extends Component {
                       }}
                     {{/if}}
                   </div>
+                  <DButton
+                    @action={{fn this.removePick topic}}
+                    @icon="xmark"
+                    @label="npn_critique_engagement.editors_picks.remove"
+                    class="btn-flat btn-small npn-editors-picks__remove"
+                  />
                 {{else}}
                   <DButton
                     @action={{fn this.pick topic}}

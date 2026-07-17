@@ -109,6 +109,10 @@ en:
         pick: "Pick"
         picked_by: "Picked by @%{username}"
         picked_for: "Picked by @%{username} for %{genre}"
+        pending_note: "Publishing shortly — undo leaves no trace."
+        undo: "Undo"
+        remove: "Remove pick"
+        remove_confirm: "Remove this Editor's Pick? The tag, the public note, and the badge will be removed. If the congratulations message already went out, it can't be unsent."
         pick_modal:
           title: "Make this an Editor's Pick"
           genre_label: "Which category is this pick for?"

@@ -10,8 +10,8 @@ module DiscourseNpnCritiqueEngagement
     requires_login
     before_action :ensure_staff
 
-    PICK_ACTION_CODE = "npn_editors_pick"
-    PICK_GENRE_FIELD = "npn_editors_pick_genre"
+    PICK_ACTION_CODE = EditorsPick::ACTION_CODE
+    PICK_GENRE_FIELD = EditorsPick::GENRE_FIELD
     REASON_MAX_LENGTH = 1000
 
     # GET /critique-engagement/editors-picks?week=YYYY-MM-DD&tag=landscape
@@ -45,17 +45,17 @@ module DiscourseNpnCritiqueEngagement
     end
 
     # POST /critique-engagement/editors-picks/pick
-    # Applies the editors-pick tag and posts a public small-action note —
-    # replacing the old manual whisper — so the pick and the picker are
-    # visible on the topic itself. Genres overlap on cross-tagged images, so
-    # the moderator declares which genre the pick fills (stored on the note
-    # for the other moderators), and can say why publicly — the reason
-    # becomes the note's body.
+    # Genres overlap on cross-tagged images, so the moderator declares which
+    # genre the pick fills (stored on the note for the other moderators), and
+    # can say why publicly — the reason becomes the note's body. With a
+    # finalize window configured the pick is only STAGED: nothing member-
+    # visible happens until the delayed job fires, so an accidental or
+    # regretted pick can be undone without the member ever knowing.
     def pick
       topic = Topic.find_by(id: params.require(:topic_id))
       raise Discourse::NotFound if topic.nil? || !category_ids.include?(topic.category_id)
 
-      if topic.tags.map(&:name).include?(pick_tag)
+      if EditorsPick.picked?(topic) || PendingPick.exists?(topic_id: topic.id)
         return(
           render_json_error(
             I18n.t("npn_critique_engagement.editors_picks.already_picked"),
@@ -71,63 +71,59 @@ module DiscourseNpnCritiqueEngagement
       reason = params[:reason].to_s.strip.presence
       raise Discourse::InvalidParameters.new(:reason) if reason && reason.length > REASON_MAX_LENGTH
 
-      DiscourseTagging.tag_topic_by_names(topic, guardian, [pick_tag], append: true)
-      note =
-        topic.add_moderator_post(
-          current_user,
-          reason,
-          post_type: Post.types[:small_action],
-          action_code: PICK_ACTION_CODE,
-        )
-      if genre && note
-        note.custom_fields[PICK_GENRE_FIELD] = genre
-        note.save_custom_fields
+      window = SiteSetting.npn_critique_pick_finalize_minutes
+      if window == 0
+        EditorsPick.finalize!(topic: topic, moderator: current_user, genre: genre, reason: reason)
+        render json: {
+                 picked: true,
+                 picked_by: {
+                   username: current_user.username,
+                   picked_at: Time.zone.now,
+                   genre: genre,
+                 },
+               }
+      else
+        pending =
+          PendingPick.create!(
+            topic_id: topic.id,
+            user_id: current_user.id,
+            genre: genre,
+            reason: reason,
+            finalize_at: window.minutes.from_now,
+          )
+        Jobs.enqueue_in(window.minutes, :npn_finalize_editors_pick, pending_pick_id: pending.id)
+        render json: {
+                 pending: {
+                   username: current_user.username,
+                   finalize_at: pending.finalize_at,
+                   genre: genre,
+                 },
+               }
       end
-      grant_pick_badge(topic)
-      send_pick_pm(topic)
+    end
 
-      render json: {
-               picked: true,
-               picked_by: {
-                 username: current_user.username,
-                 picked_at: Time.zone.now,
-                 genre: genre,
-               },
-             }
+    # POST /critique-engagement/editors-picks/unpick
+    # Two tools in one: cancelling a staged pick (nothing public ever
+    # happened, the member never knows) and removing a finalized pick (tag,
+    # note, and badge are removed; a PM that already went out stays).
+    def unpick
+      topic = Topic.find_by(id: params.require(:topic_id))
+      raise Discourse::NotFound if topic.nil? || !category_ids.include?(topic.category_id)
+
+      if (pending = PendingPick.find_by(topic_id: topic.id))
+        pending.destroy!
+        return render json: { picked: false }
+      end
+
+      if EditorsPick.picked?(topic)
+        EditorsPick.remove!(topic: topic, moderator: current_user)
+        return render json: { picked: false }
+      end
+
+      render_json_error(I18n.t("npn_critique_engagement.editors_picks.not_picked"), status: 422)
     end
 
     private
-
-    # The badge honors the photographer, not just the post — granted by the
-    # picking moderator and tied to the image, so the badge page becomes a
-    # gallery of every pick.
-    def grant_pick_badge(topic)
-      return if SiteSetting.npn_critique_editors_pick_badge_name.blank?
-      return if topic.user.nil?
-
-      BadgeGranter.grant(
-        Badges.editors_pick,
-        topic.user,
-        granted_by: current_user,
-        post_id: topic.first_post&.id,
-      )
-    rescue => e
-      Rails.logger.warn("NPN critique engagement: editors pick badge failed: #{e.message}")
-    end
-
-    def send_pick_pm(topic)
-      return if !SiteSetting.npn_critique_editors_pick_pm_enabled
-      return if topic.user.nil?
-
-      SystemMessage.create_from_system_user(
-        topic.user,
-        :npn_editors_pick,
-        topic_title: topic.title,
-        topic_url: topic.url,
-      )
-    rescue => e
-      Rails.logger.warn("NPN critique engagement: editors pick PM failed: #{e.message}")
-    end
 
     def ensure_staff
       raise Discourse::InvalidAccess.new if !current_user&.staff?
@@ -170,17 +166,19 @@ module DiscourseNpnCritiqueEngagement
           .where(post_id: pick_notes.values.map(&:id), name: PICK_GENRE_FIELD)
           .pluck(:post_id, :value)
           .to_h
+      pendings = PendingPick.for_topics(topics.map(&:id))
 
       topics
         .map do |topic|
-          topic_payload(topic, scores[topic.user_id], pick_notes[topic.id], note_genres)
+          topic_payload(topic, scores[topic.user_id], pick_notes[topic.id], note_genres, pendings)
         end
         .sort_by do |payload|
           [payload[:score] ? -payload[:score][:score] : Float::INFINITY, payload[:created_at]]
         end
     end
 
-    def topic_payload(topic, score, pick_note, note_genres = {})
+    def topic_payload(topic, score, pick_note, note_genres = {}, pendings = {})
+      pending = pendings[topic.id]
       {
         id: topic.id,
         title: topic.title,
@@ -200,6 +198,13 @@ module DiscourseNpnCritiqueEngagement
               ratio: score.ratio.round(2),
             },
         genre_options: genre_options(topic),
+        pending:
+          pending &&
+            {
+              username: pending.user&.username,
+              finalize_at: pending.finalize_at,
+              genre: pending.genre,
+            },
         picked: topic.tags.map(&:name).include?(pick_tag),
         picked_by:
           pick_note &&

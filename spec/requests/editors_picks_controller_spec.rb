@@ -107,7 +107,10 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
   describe "#pick" do
     fab!(:topic) { make_image_topic(engaged_poster, landscape_tag) }
 
-    before { sign_in(moderator) }
+    before do
+      sign_in(moderator)
+      SiteSetting.npn_critique_pick_finalize_minutes = 0
+    end
 
     it "applies the pick tag and posts a public small-action note" do
       post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id }
@@ -204,6 +207,127 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       post "/moderate/editors-picks/pick.json", params: { topic_id: other.id }
 
       expect(response.status).to eq(404)
+    end
+  end
+
+  describe "#pick with an undo window" do
+    fab!(:topic) { make_image_topic(engaged_poster, landscape_tag) }
+
+    before do
+      sign_in(moderator)
+      SiteSetting.npn_critique_pick_finalize_minutes = 10
+    end
+
+    def stage_pick
+      post "/moderate/editors-picks/pick.json",
+           params: {
+             topic_id: topic.id,
+             genre: "landscape",
+             reason: "Lovely light.",
+           }
+      DiscourseNpnCritiqueEngagement::PendingPick.find_by(topic_id: topic.id)
+    end
+
+    it "stages the pick with nothing member-visible, shown as pending to staff" do
+      pending = stage_pick
+
+      expect(response.status).to eq(200)
+      expect(response.parsed_body["pending"]["genre"]).to eq("landscape")
+      expect(pending.reason).to eq("Lovely light.")
+      expect(pending.finalize_at).to be_within(1.minute).of(10.minutes.from_now)
+
+      expect(topic.reload.tags.map(&:name)).not_to include("editors-pick")
+      expect(topic.posts.where(action_code: "npn_editors_pick")).to be_empty
+      expect(UserBadge.count).to eq(0)
+      expect(Topic.private_messages.count).to eq(0)
+
+      get "/moderate/editors-picks.json"
+      entry = response.parsed_body["topics"].find { |payload| payload["id"] == topic.id }
+      expect(entry["pending"]["username"]).to eq(moderator.username)
+      expect(entry["picked"]).to eq(false)
+    end
+
+    it "blocks a second pick while one is staged" do
+      stage_pick
+
+      post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id }
+
+      expect(response.status).to eq(422)
+    end
+
+    it "finalizes everything when the delayed job fires" do
+      pending = stage_pick
+
+      Jobs::NpnFinalizeEditorsPick.new.execute(pending_pick_id: pending.id)
+
+      expect(topic.reload.tags.map(&:name)).to include("editors-pick")
+      note = topic.posts.where(action_code: "npn_editors_pick").first
+      expect(note.raw).to eq("Lovely light.")
+      expect(note.custom_fields["npn_editors_pick_genre"]).to eq("landscape")
+      expect(UserBadge.count).to eq(1)
+      expect(Topic.private_messages.count).to eq(1)
+      expect(DiscourseNpnCritiqueEngagement::PendingPick.exists?(topic_id: topic.id)).to eq(false)
+    end
+
+    it "undo cancels the staged pick and the job becomes a no-op" do
+      pending = stage_pick
+
+      post "/moderate/editors-picks/unpick.json", params: { topic_id: topic.id }
+
+      expect(response.status).to eq(200)
+      expect(DiscourseNpnCritiqueEngagement::PendingPick.exists?(topic_id: topic.id)).to eq(false)
+
+      Jobs::NpnFinalizeEditorsPick.new.execute(pending_pick_id: pending.id)
+
+      expect(topic.reload.tags.map(&:name)).not_to include("editors-pick")
+      expect(Topic.private_messages.count).to eq(0)
+    end
+
+    it "the nightly sweep finalizes an overdue staged pick whose job was lost" do
+      pending = stage_pick
+      pending.update!(finalize_at: 1.minute.ago)
+
+      DiscourseNpnCritiqueEngagement::EditorsPick.finalize_due!
+
+      expect(topic.reload.tags.map(&:name)).to include("editors-pick")
+      expect(DiscourseNpnCritiqueEngagement::PendingPick.exists?(topic_id: topic.id)).to eq(false)
+    end
+  end
+
+  describe "#unpick on a finalized pick" do
+    fab!(:topic) { make_image_topic(engaged_poster, landscape_tag) }
+
+    before do
+      sign_in(moderator)
+      SiteSetting.npn_critique_pick_finalize_minutes = 0
+    end
+
+    it "removes the tag, note, and badge — the PM stays" do
+      post "/moderate/editors-picks/pick.json",
+           params: {
+             topic_id: topic.id,
+             genre: "landscape",
+             reason: "Lovely light.",
+           }
+      expect(topic.reload.tags.map(&:name)).to include("editors-pick")
+
+      post "/moderate/editors-picks/unpick.json", params: { topic_id: topic.id }
+
+      expect(response.status).to eq(200)
+      expect(topic.reload.tags.map(&:name)).not_to include("editors-pick")
+      expect(topic.posts.where(action_code: "npn_editors_pick", deleted_at: nil)).to be_empty
+      expect(UserBadge.count).to eq(0)
+      expect(Topic.private_messages.count).to eq(1)
+
+      get "/moderate/editors-picks.json"
+      entry = response.parsed_body["topics"].find { |payload| payload["id"] == topic.id }
+      expect(entry["picked"]).to eq(false)
+    end
+
+    it "rejects unpicking a topic that isn't picked" do
+      post "/moderate/editors-picks/unpick.json", params: { topic_id: topic.id }
+
+      expect(response.status).to eq(422)
     end
   end
 end

@@ -14,6 +14,9 @@ module Jobs
       DiscourseNpnCritiqueEngagement::MonthlyRecognition.record_due
       DiscourseNpnCritiqueEngagement::Scorer.run
       DiscourseNpnCritiqueEngagement::OutreachClaim.send_reminders
+      # Backstop for staged picks whose delayed job was lost (e.g. a Redis
+      # flush): anything past its undo window gets finalized here.
+      DiscourseNpnCritiqueEngagement::EditorsPick.finalize_due!
     end
   end
 end
