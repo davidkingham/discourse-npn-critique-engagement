@@ -18,6 +18,7 @@ en:
     npn_critique_editors_pick_tag: "The tag the editors' pick review queue applies when staff make a pick."
     npn_critique_coverage_days: "How many days back the moderator dashboard looks for images still waiting for a substantive critique."
     npn_critique_coverage_excluded_tags: "Topics with these tags don't need critique coverage. Weekly-challenge announcement topics are always excluded; challenge entries are covered."
+    npn_critique_coverage_excluded_title_prefixes: "Topics whose title starts with any of these don't need critique coverage — catches announcement topics created before the weekly-challenge plugin marked them."
     npn_critique_pick_excluded_tags: "Tags that aren't pick genres and stay off the weekly pick status board (style and attribute tags)."
     npn_critique_new_member_category: "The New Members category (with its subcategories) surfaced on the moderator dashboard."
     npn_critique_new_member_min_replies: "New-member posts stay on the dashboard until they have this many replies — every new member deserves more than one response."

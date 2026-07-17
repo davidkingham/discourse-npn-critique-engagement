@@ -89,6 +89,10 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       entry = make_image_topic(veteran, tag: challenge_tag)
       announcement = make_image_topic(moderator, tag: challenge_tag)
       announcement.upsert_custom_fields(npn_weekly_challenge_slug: "2026-07-12-freshwater")
+      # Announcements from before the plugin existed carry no marker — only
+      # their title gives them away.
+      old_announcement = make_image_topic(moderator, tag: challenge_tag)
+      old_announcement.update!(title: "Weekly Challenge: Geological Wonders")
 
       get "/moderate.json"
 

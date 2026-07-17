@@ -74,6 +74,7 @@ module DiscourseNpnCritiqueEngagement
             WHERE tcf.topic_id = t.id AND tcf.name = 'npn_weekly_challenge_slug'
           )
           #{coverage_excluded_tags_fragment}
+          #{coverage_excluded_titles_fragment}
       SQL
 
       topics =
@@ -264,6 +265,21 @@ module DiscourseNpnCritiqueEngagement
       SiteSetting.npn_critique_coverage_excluded_tags.to_s.split("|")
     end
 
+    # Announcement topics created before the weekly-challenge plugin stamped
+    # its marker only reveal themselves by title. One bound param per prefix;
+    # the fragment shape itself contains no runtime values.
+    def coverage_excluded_titles_fragment
+      return "" if coverage_excluded_title_prefixes.blank?
+
+      conditions =
+        coverage_excluded_title_prefixes.each_index.map { |i| "t.title ILIKE :title_prefix_#{i}" }
+      "AND NOT (#{conditions.join(" OR ")})"
+    end
+
+    def coverage_excluded_title_prefixes
+      SiteSetting.npn_critique_coverage_excluded_title_prefixes.to_s.split("|")
+    end
+
     def mini_rows(scope)
       rows = scope.includes(:user).limit(MINI_LIST_LIMIT).reject { |row| row.user.nil? }
       serialize_data(
@@ -282,6 +298,9 @@ module DiscourseNpnCritiqueEngagement
         min_length: SiteSetting.npn_critique_min_reply_length,
       }
       params[:excluded_tags] = coverage_excluded_tags if coverage_excluded_tags.present?
+      coverage_excluded_title_prefixes.each_with_index do |prefix, i|
+        params[:"title_prefix_#{i}"] = "#{prefix}%"
+      end
       params
     end
 

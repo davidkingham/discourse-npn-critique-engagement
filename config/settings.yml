@@ -176,6 +176,10 @@ plugins:
     default: ""
     type: tag_list
 
+  npn_critique_coverage_excluded_title_prefixes:
+    default: "Weekly Challenge:"
+    type: list
+
   npn_critique_pick_excluded_tags:
     default: "black-and-white|grand|intimate"
     type: tag_list
