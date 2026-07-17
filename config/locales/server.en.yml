@@ -21,6 +21,8 @@ en:
     npn_critique_pick_excluded_tags: "Tags that aren't pick genres and stay off the weekly pick status board (style and attribute tags)."
     npn_critique_new_member_category: "The New Members category (with its subcategories) surfaced on the moderator dashboard."
     npn_critique_new_member_min_replies: "New-member posts stay on the dashboard until they have this many replies — every new member deserves more than one response."
+    npn_critique_claim_expiry_days: "Outreach claims quietly expire after this many days so a forgotten claim never blocks a member."
+    npn_critique_claim_reminder_hours: "PM the claiming moderator once, if the contact hasn't been logged after this many hours (checked nightly). 0 disables the reminder."
     npn_critique_editors_pick_badge_name: "Badge granted to the photographer when their image is picked, tied to the image post. Leave blank to skip."
     npn_critique_editors_pick_pm_enabled: "Send the photographer a congratulations PM when their image is picked."
     npn_critique_award_badges_enabled: "Each month, grant post-tied badges for comments that received award reactions during the month."
@@ -57,6 +59,16 @@ en:
     npn_critique_season_topic_author: "Username that authors the monthly highlights topic."
     npn_critique_season_topic_pin_days: "How many days the monthly highlights topic stays pinned. 0 to skip pinning."
   system_messages:
+    npn_outreach_claim_reminder:
+      subject_template: "Reminder: you offered to reach out to @%{member_username}"
+      text_body_template: |
+        Hi @%{username},
+
+        A quick nudge: you marked that you'd reach out to @%{member_username}, and the contact hasn't been logged yet.
+
+        If you've already been in touch, please log a quick note on the [outreach page](%{base_url}/moderate/outreach) so the claim clears and the other moderators can see it's handled. If you can't get to it, no worries — release the claim there so someone else can pick it up.
+
+        Thanks for looking after the community!
     npn_editors_pick:
       subject_template: "Your image was selected as an Editor's Pick!"
       text_body_template: |

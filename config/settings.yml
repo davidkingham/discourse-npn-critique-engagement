@@ -188,6 +188,16 @@ plugins:
     default: 2
     min: 1
 
+  npn_critique_claim_expiry_days:
+    default: 2
+    min: 1
+    max: 30
+
+  npn_critique_claim_reminder_hours:
+    default: 24
+    min: 0
+    max: 168
+
   npn_critique_editors_pick_badge_name:
     default: "Editor's Pick"
 

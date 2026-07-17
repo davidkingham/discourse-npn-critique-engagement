@@ -169,6 +169,48 @@ describe DiscourseNpnCritiqueEngagement::Admin::OutreachController do
       expect(DiscourseNpnCritiqueEngagement::OutreachClaim.where(user_id: member.id)).to be_empty
     end
 
+    it "reminds the claimer once when the contact goes unlogged past the window" do
+      claim =
+        DiscourseNpnCritiqueEngagement::OutreachClaim.create!(
+          user_id: member.id,
+          staff_user: moderator,
+          created_at: 25.hours.ago,
+        )
+      fresh_claim =
+        DiscourseNpnCritiqueEngagement::OutreachClaim.create!(
+          user_id: healthy_member.id,
+          staff_user: moderator,
+          created_at: 1.hour.ago,
+        )
+
+      expect { DiscourseNpnCritiqueEngagement::OutreachClaim.send_reminders }.to change {
+        Topic.private_messages.count
+      }.by(1)
+
+      pm = Topic.private_messages.order(created_at: :desc).first
+      expect(pm.topic_allowed_users.pluck(:user_id)).to include(moderator.id)
+      expect(pm.first_post.raw).to include(member.username)
+      expect(claim.reload.reminded_at).to be_present
+      expect(fresh_claim.reload.reminded_at).to be_nil
+
+      expect { DiscourseNpnCritiqueEngagement::OutreachClaim.send_reminders }.not_to change {
+        Topic.private_messages.count
+      }
+    end
+
+    it "sends no reminders when the reminder window is disabled" do
+      SiteSetting.npn_critique_claim_reminder_hours = 0
+      DiscourseNpnCritiqueEngagement::OutreachClaim.create!(
+        user_id: member.id,
+        staff_user: moderator,
+        created_at: 25.hours.ago,
+      )
+
+      expect { DiscourseNpnCritiqueEngagement::OutreachClaim.send_reminders }.not_to change {
+        Topic.private_messages.count
+      }
+    end
+
     it "lets the claimer release their own claim" do
       DiscourseNpnCritiqueEngagement::OutreachClaim.create!(
         user_id: member.id,

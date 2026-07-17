@@ -13,6 +13,7 @@ module Jobs
 
       DiscourseNpnCritiqueEngagement::MonthlyRecognition.record_due
       DiscourseNpnCritiqueEngagement::Scorer.run
+      DiscourseNpnCritiqueEngagement::OutreachClaim.send_reminders
     end
   end
 end
