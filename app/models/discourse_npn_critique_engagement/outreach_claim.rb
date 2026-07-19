@@ -49,6 +49,26 @@ module DiscourseNpnCritiqueEngagement
         end
     end
 
+    # A PM from the claiming moderator to the claimed member IS the contact:
+    # log it and clear the claim, so sending the message is all a moderator
+    # has to do — no separate "mark as done" step.
+    def self.complete_from_pm(topic, sender)
+      return if !topic.private_message?
+      return if sender.nil? || !sender.staff?
+
+      active
+        .where(staff_user_id: sender.id)
+        .where(user_id: topic.allowed_users.map(&:id))
+        .find_each do |claim|
+          OutreachLog.create!(
+            user_id: claim.user_id,
+            staff_user_id: sender.id,
+            note: I18n.t("npn_critique_engagement.outreach.pm_sent_note", title: topic.title),
+          )
+          claim.destroy!
+        end
+    end
+
     def active?
       created_at >= self.class.expiry_days.days.ago
     end

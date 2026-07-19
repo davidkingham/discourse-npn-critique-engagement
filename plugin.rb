@@ -97,6 +97,12 @@ after_initialize do
     end,
   ) { DiscourseNpnCritiqueEngagement::Recognition.level_for(object.id) }
 
+  # Sending the member a PM completes an outreach claim on its own — the
+  # moderator shouldn't also have to log the contact by hand.
+  on(:topic_created) do |topic, _opts, user|
+    DiscourseNpnCritiqueEngagement::OutreachClaim.complete_from_pm(topic, user)
+  end
+
   # The recognition cache derives from these settings, so changing them must
   # invalidate it (score runs handle the rest).
   on(:site_setting_changed) do |name, _old_value, _new_value|
