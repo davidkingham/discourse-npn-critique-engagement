@@ -14,6 +14,7 @@ import DPageSubheader from "discourse/ui-kit/d-page-subheader";
 import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-template";
 import dFormatDate from "discourse/ui-kit/helpers/d-format-date";
 import { i18n } from "discourse-i18n";
+import NpnOutreachTemplateMenu from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-outreach-template-menu";
 import NpnTierBadge from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-tier-badge";
 
 function tagUrl(tag) {
@@ -85,6 +86,7 @@ const OutreachRow = <template>
           class="btn-small npn-admin-outreach__claim-button"
         />
       {{/if}}
+      <NpnOutreachTemplateMenu @row={{@row}} />
       <DButton
         @action={{fn @toggleNotes @row}}
         @label="npn_critique_engagement.admin.outreach.add_note"

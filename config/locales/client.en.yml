@@ -181,3 +181,49 @@ en:
           welcome_title: "New members to welcome"
           welcome_description: "New members already giving critiques — a personal hello goes a long way."
           welcome_empty: "No new members with critique activity right now."
+          copy_template: "Copy template"
+          template_copied: "Template copied. Fill in the bracketed parts before sending."
+          template_labels:
+            welcome: "Welcome a promising new critic"
+            nudge: "Invite to critique"
+            soft_nudge: "Softer hello for a newer member"
+            followup: "Follow up on an earlier note"
+          templates:
+            welcome: |-
+              Subject: Welcome to NPN, we've noticed your critiques
+
+              Hi %{name},
+
+              I'm %{mod_name}, one of the moderators here. I wanted to say a proper hello. We've noticed you've been jumping into other members' threads with thoughtful feedback, and that's exactly what makes this community work. Thank you.
+
+              I especially liked what you said in [link to a critique they wrote]: [one specific thing about it].
+
+              If you ever have questions about the community, or want a second pair of eyes on something before you post it, feel free to message me anytime. Glad you're here.
+            nudge: |-
+              Subject: Enjoying your work, and an invitation
+
+              Hi %{name},
+
+              I'm %{mod_name}, one of the moderators. I've been enjoying the work you've been sharing. [The image or series that caught your eye] caught my eye in particular.
+
+              One thing we've learned here over the years: the members who get the most useful feedback on their own images are the ones who spend a little time in other people's threads too. It doesn't have to be expert analysis. "Here's what my eye went to first" or "this crop feels tight to me" is genuinely valuable, and it's how people get to know your eye and start watching for your posts.
+
+              If you're not sure where to start, [link to an active thread in their genre] could use another perspective right now. No pressure at all, just an invitation. Happy to help if you ever have questions.
+            soft_nudge: |-
+              Subject: A quick hello from the mod team
+
+              Hi %{name},
+
+              Just a friendly hello. I'm %{mod_name}, one of the moderators. Thanks for sharing your work with us; [a specific image of theirs] was a treat.
+
+              I wanted to mention something a lot of newer members don't realize: leaving feedback on other people's images is the fastest way to become part of the community here. Nobody expects polished critique. Honest first impressions are what most photographers actually want.
+
+              If that sounds intimidating, a simple formula that works: what drew your eye, what the image made you feel, and one thing you might try differently. That's it. Hope to see you around the threads!
+            followup: |-
+              Subject: Just circling back
+
+              Hi %{name},
+
+              Just circling back on my note from a while ago. No obligation at all, and I hope it didn't come across as a scolding, because it wasn't meant as one. We like having your work here.
+
+              The door's open whenever you feel like weighing in on other members' threads. If there's anything keeping you from participating that we could make easier, I'd honestly love to hear it.
