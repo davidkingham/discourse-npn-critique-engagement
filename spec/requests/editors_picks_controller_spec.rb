@@ -24,10 +24,16 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
     )
   end
 
-  def make_image_topic(user, tag)
+  def make_image_topic(user, tag, created_at: nil)
     topic = Fabricate(:topic, category: category, user: user, tags: [tag])
     Fabricate(:post, topic: topic, user: user)
+    topic.update!(created_at: created_at) if created_at
     topic
+  end
+
+  # The queue defaults to the last finished week, so list fixtures live there.
+  def previous_week_time(offset = 0)
+    (Date.current.beginning_of_week(:sunday) - 7).beginning_of_day + 12.hours + offset
   end
 
   it "is staff-only" do
@@ -65,9 +71,15 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
   end
 
   describe "#show" do
-    fab!(:engaged_topic) { make_image_topic(engaged_poster, landscape_tag) }
-    fab!(:quiet_topic) { make_image_topic(quiet_poster, landscape_tag) }
-    fab!(:wildlife_topic) { make_image_topic(quiet_poster, wildlife_tag) }
+    fab!(:engaged_topic) do
+      make_image_topic(engaged_poster, landscape_tag, created_at: previous_week_time)
+    end
+    fab!(:quiet_topic) do
+      make_image_topic(quiet_poster, landscape_tag, created_at: previous_week_time(1.minute))
+    end
+    fab!(:wildlife_topic) do
+      make_image_topic(quiet_poster, wildlife_tag, created_at: previous_week_time(2.minutes))
+    end
 
     before { sign_in(moderator) }
 
@@ -84,14 +96,38 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       expect(response.parsed_body["tags"]).to contain_exactly("landscape", "wildlife")
     end
 
+    it "defaults to the last finished week" do
+      current_week_topic = make_image_topic(quiet_poster, landscape_tag)
+
+      get "/moderate/editors-picks.json"
+
+      expect(response.parsed_body["week_start"]).to eq(
+        (Date.current.beginning_of_week(:sunday) - 7).to_s,
+      )
+      ids = response.parsed_body["topics"].map { |topic| topic["id"] }
+      expect(ids).not_to include(current_week_topic.id)
+      expect(ids).to include(engaged_topic.id)
+    end
+
     it "filters by tag" do
       get "/moderate/editors-picks.json", params: { tag: "wildlife" }
 
       expect(response.parsed_body["topics"].map { |topic| topic["id"] }).to eq([wildlife_topic.id])
     end
 
+    it "always offers every genre tag in the filter, even with no posts that week" do
+      birds_tag = Fabricate(:tag, name: "birds")
+      make_image_topic(quiet_poster, birds_tag, created_at: 3.weeks.ago)
+      excluded_tag = Fabricate(:tag, name: "black-and-white")
+      make_image_topic(quiet_poster, excluded_tag, created_at: previous_week_time(3.minutes))
+
+      get "/moderate/editors-picks.json"
+
+      expect(response.parsed_body["tags"]).to contain_exactly("birds", "landscape", "wildlife")
+    end
+
     it "keeps weekly-challenge announcement topics out of the pick queue" do
-      marked = make_image_topic(quiet_poster, landscape_tag)
+      marked = make_image_topic(quiet_poster, landscape_tag, created_at: previous_week_time)
       marked.custom_fields["npn_weekly_challenge_slug"] = "geological-wonders"
       marked.save_custom_fields
       legacy =
@@ -100,6 +136,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
           category: category,
           user: quiet_poster,
           title: "Weekly Challenge: Geological Wonders",
+          created_at: previous_week_time,
         )
       Fabricate(:post, topic: legacy, user: quiet_poster)
 
@@ -112,8 +149,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
     end
 
     it "excludes other weeks and other categories" do
-      old_topic = make_image_topic(quiet_poster, landscape_tag)
-      old_topic.update!(created_at: 2.weeks.ago)
+      old_topic = make_image_topic(quiet_poster, landscape_tag, created_at: 3.weeks.ago)
       elsewhere = Fabricate(:topic, user: quiet_poster, tags: [landscape_tag])
       Fabricate(:post, topic: elsewhere, user: quiet_poster)
 
@@ -126,7 +162,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
   end
 
   describe "#pick" do
-    fab!(:topic) { make_image_topic(engaged_poster, landscape_tag) }
+    fab!(:topic) { make_image_topic(engaged_poster, landscape_tag, created_at: previous_week_time) }
 
     before do
       sign_in(moderator)
@@ -232,7 +268,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
   end
 
   describe "#pick with an undo window" do
-    fab!(:topic) { make_image_topic(engaged_poster, landscape_tag) }
+    fab!(:topic) { make_image_topic(engaged_poster, landscape_tag, created_at: previous_week_time) }
 
     before do
       sign_in(moderator)
@@ -316,7 +352,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
   end
 
   describe "#unpick on a finalized pick" do
-    fab!(:topic) { make_image_topic(engaged_poster, landscape_tag) }
+    fab!(:topic) { make_image_topic(engaged_poster, landscape_tag, created_at: previous_week_time) }
 
     before do
       sign_in(moderator)

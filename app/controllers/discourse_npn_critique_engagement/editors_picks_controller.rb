@@ -25,7 +25,7 @@ module DiscourseNpnCritiqueEngagement
         format.json do
           week_start = requested_week
           topics = week_topics(week_start)
-          tags = genre_tags(topics)
+          tags = GenreTags.all
           topics =
             topics.select { |topic| topic.tags.map(&:name).include?(params[:tag]) } if params[
             :tag
@@ -133,9 +133,15 @@ module DiscourseNpnCritiqueEngagement
       raise Discourse::InvalidAccess.new if !current_user&.staff?
     end
 
+    # Picks are judged after a week completes, so without an explicit week
+    # the queue opens on the last finished week — mods pick on Sunday, when
+    # the just-started week would be empty.
     def requested_week
-      base = params[:week].present? ? Date.parse(params[:week]) : Date.current
-      base.beginning_of_week(:sunday)
+      if params[:week].present?
+        Date.parse(params[:week]).beginning_of_week(:sunday)
+      else
+        Date.current.beginning_of_week(:sunday) - 7
+      end
     rescue Date::Error
       raise Discourse::InvalidParameters.new(:week)
     end
@@ -166,12 +172,6 @@ module DiscourseNpnCritiqueEngagement
 
     def excluded_title_prefixes
       SiteSetting.npn_critique_coverage_excluded_title_prefixes.to_s.split("|")
-    end
-
-    # The genre selector: every tag carried by the week's topics, except the
-    # pick tag itself.
-    def genre_tags(topics)
-      topics.flat_map { |topic| topic.tags.map(&:name) }.uniq.sort - [pick_tag]
     end
 
     def serialize_topics(topics)

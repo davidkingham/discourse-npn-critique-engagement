@@ -16,6 +16,22 @@ module DiscourseNpnCritiqueEngagement
       [pick_tag] + SiteSetting.npn_critique_pick_excluded_tags.to_s.split("|")
     end
 
+    # The full genre vocabulary: every tag in use across the critique
+    # categories, regardless of week. The pick queue's filter always offers
+    # all of these — a genre with no posts one week still shows up, so
+    # "empty" and "missing" look different.
+    def all
+      return [] if category_ids.blank?
+
+      Tag
+        .joins(topic_tags: :topic)
+        .where(topics: { category_id: category_ids, archetype: Archetype.default, deleted_at: nil })
+        .where.not(name: non_genre_tags)
+        .distinct
+        .order(:name)
+        .pluck(:name)
+    end
+
     # {user_id => [{tag:, count:}, ...]} — each member's most-posted genre
     # tags within the rolling window, best first.
     def top_for_users(user_ids, limit: 3)
