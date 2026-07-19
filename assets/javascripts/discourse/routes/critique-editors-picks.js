@@ -10,6 +10,7 @@ export default class CritiqueEditorsPicksRoute extends DiscourseRoute {
 
   queryParams = {
     tag: { refreshModel: true },
+    week: { refreshModel: true },
   };
 
   beforeModel() {
@@ -22,9 +23,14 @@ export default class CritiqueEditorsPicksRoute extends DiscourseRoute {
   }
 
   model(params) {
-    return ajax("/moderate/editors-picks.json", {
-      data: params.tag ? { tag: params.tag } : {},
-    });
+    const data = {};
+    if (params.week) {
+      data.week = params.week;
+    }
+    if (params.tag) {
+      data.tag = params.tag;
+    }
+    return ajax("/moderate/editors-picks.json", { data });
   }
 
   titleToken() {

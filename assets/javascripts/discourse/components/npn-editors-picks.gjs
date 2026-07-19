@@ -35,53 +35,47 @@ function shiftWeek(weekStart, days) {
 export default class NpnEditorsPicks extends Component {
   @service dialog;
   @service modal;
+  @service router;
 
+  // Local pick/unpick updates, keyed to the model they were applied on so a
+  // route refresh (week/tag navigation, back button) discards them.
   @tracked dataOverride = null;
-  @tracked loading = false;
 
   get data() {
-    return this.dataOverride ?? this.args.model;
+    if (this.dataOverride?.model === this.args.model) {
+      return this.dataOverride.data;
+    }
+    return this.args.model;
   }
 
-  @action
-  async fetch(week, tag) {
-    this.loading = true;
-    try {
-      const data = { week };
-      if (tag) {
-        data.tag = tag;
-      }
-      this.dataOverride = await ajax("/moderate/editors-picks.json", {
-        data,
-      });
-    } catch (error) {
-      popupAjaxError(error);
-    } finally {
-      this.loading = false;
-    }
+  navigate(week, tag) {
+    this.router.transitionTo({ queryParams: { week, tag: tag ?? null } });
   }
 
   @action
   previousWeek() {
-    this.fetch(shiftWeek(this.data.week_start, -7), this.data.tag);
+    this.navigate(shiftWeek(this.data.week_start, -7), this.data.tag);
   }
 
   @action
   nextWeek() {
-    this.fetch(shiftWeek(this.data.week_start, 7), this.data.tag);
+    this.navigate(shiftWeek(this.data.week_start, 7), this.data.tag);
   }
 
   @action
   setTag(tag) {
-    this.fetch(this.data.week_start, tag);
+    this.navigate(this.data.week_start, tag);
   }
 
   updateTopic(topicId, changes) {
     this.dataOverride = {
-      ...this.data,
-      topics: this.data.topics.map((existing) =>
-        existing.id === topicId ? { ...existing, ...changes } : existing
-      ),
+      model: this.args.model,
+      data: {
+        ...this.data,
+        topics: this.data.topics.map((existing) =>
+          existing.id === topicId ? { ...existing, ...changes } : existing
+        ),
+      },
     };
   }
 
