@@ -11,6 +11,8 @@ DiscourseNpnCritiqueEngagement::Engine.routes.draw do
   get "/moderate/editors-picks" => "editors_picks#show"
   post "/moderate/editors-picks/pick" => "editors_picks#pick"
   post "/moderate/editors-picks/unpick" => "editors_picks#unpick"
+  post "/moderate/editors-picks/no-pick" => "editors_picks#no_pick"
+  delete "/moderate/editors-picks/no-pick" => "editors_picks#undo_no_pick"
   get "/moderate/outreach" => "editors_picks#page_shell"
   get "/moderate/report" => "editors_picks#page_shell"
 

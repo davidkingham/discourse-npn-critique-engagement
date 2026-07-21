@@ -218,8 +218,17 @@ module DiscourseNpnCritiqueEngagement
           .to_a
 
       events = pick_events
+      # A moderator can declare "no pick this week" for a genre — a judged
+      # empty slot, not a neglected one. Shown unless an actual pick
+      # supersedes it.
+      no_picks =
+        NoPick
+          .since(week_start.beginning_of_day)
+          .includes(:user)
+          .order(:created_at)
+          .group_by(&:genre)
       tags =
-        (genre_tags(pool) + events.filter_map { |event| event[:genre] }).uniq.sort -
+        (genre_tags(pool) + events.filter_map { |event| event[:genre] } + no_picks.keys).uniq.sort -
           excluded_pick_tags
 
       tags.map do |tag|
@@ -234,12 +243,14 @@ module DiscourseNpnCritiqueEngagement
               candidate[:topic_tags].include?(tag)
             end
           end
+        no_pick = event.nil? ? no_picks[tag]&.first : nil
 
         {
           tag: tag,
           picked: event.present?,
           picked_by: event&.dig(:username),
           topic_url: event&.dig(:topic_url),
+          no_pick: no_pick && { username: no_pick.user&.username },
         }
       end
     end

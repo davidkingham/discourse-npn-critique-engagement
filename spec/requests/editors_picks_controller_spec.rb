@@ -267,6 +267,35 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
     end
   end
 
+  describe "#no_pick" do
+    before do
+      sign_in(moderator)
+      make_image_topic(engaged_poster, landscape_tag)
+    end
+
+    it "declares and undoes a deliberate no-pick for a genre" do
+      post "/moderate/editors-picks/no-pick.json", params: { genre: "landscape" }
+
+      expect(response.status).to eq(200)
+      expect(response.parsed_body["username"]).to eq(moderator.username)
+      expect(DiscourseNpnCritiqueEngagement::NoPick.where(genre: "landscape").count).to eq(1)
+
+      # A second declaration keeps the original rather than duplicating it.
+      post "/moderate/editors-picks/no-pick.json", params: { genre: "landscape" }
+      expect(DiscourseNpnCritiqueEngagement::NoPick.where(genre: "landscape").count).to eq(1)
+
+      delete "/moderate/editors-picks/no-pick.json", params: { genre: "landscape" }
+      expect(response.status).to eq(204)
+      expect(DiscourseNpnCritiqueEngagement::NoPick.exists?).to eq(false)
+    end
+
+    it "rejects a genre outside the vocabulary" do
+      post "/moderate/editors-picks/no-pick.json", params: { genre: "not-a-genre" }
+
+      expect(response.status).to eq(400)
+    end
+  end
+
   describe "#pick with an undo window" do
     fab!(:topic) { make_image_topic(engaged_poster, landscape_tag, created_at: previous_week_time) }
 

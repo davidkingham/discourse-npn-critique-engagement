@@ -545,6 +545,20 @@
     color: var(--primary-high);
   }
 
+  &__pick-none {
+    color: var(--primary-medium);
+    font-style: italic;
+
+    .d-icon {
+      color: currentcolor;
+    }
+  }
+
+  &__no-pick-button,
+  &__no-pick-undo {
+    margin-inline-start: auto;
+  }
+
   &__mini-row {
     display: flex;
     flex-wrap: wrap;

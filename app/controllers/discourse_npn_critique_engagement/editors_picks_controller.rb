@@ -106,6 +106,29 @@ module DiscourseNpnCritiqueEngagement
       end
     end
 
+    # POST /moderate/editors-picks/no-pick
+    # The deliberate empty slot: a moderator judged the genre's images for
+    # the week and found nothing strong enough. On the dashboard board this
+    # reads differently from a slot nobody has gotten to yet. Resets with
+    # the pick week on Sunday, like picks themselves.
+    def no_pick
+      genre = params.require(:genre)
+      raise Discourse::InvalidParameters.new(:genre) if !GenreTags.all.include?(genre)
+
+      declaration =
+        NoPick.current_week.find_by(genre: genre) ||
+          NoPick.create!(genre: genre, user: current_user)
+
+      render json: { genre: genre, username: declaration.user&.username }
+    end
+
+    # DELETE /moderate/editors-picks/no-pick
+    def undo_no_pick
+      NoPick.current_week.where(genre: params.require(:genre)).destroy_all
+
+      head :no_content
+    end
+
     # POST /critique-engagement/editors-picks/unpick
     # Two tools in one: cancelling a staged pick (nothing public ever
     # happened, the member never knows) and removing a finalized pick (tag,

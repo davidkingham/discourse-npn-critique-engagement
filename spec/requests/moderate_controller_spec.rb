@@ -192,6 +192,35 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       expect(status["landscape"]["picked"]).to eq(false)
     end
 
+    it "shows a declared no-pick as handled until a pick supersedes it" do
+      image = make_image_topic(veteran, created_at: 1.hour.ago)
+
+      post "/moderate/editors-picks/no-pick.json", params: { genre: "landscape" }
+      get "/moderate.json"
+
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["landscape"]["picked"]).to eq(false)
+      expect(status["landscape"]["no_pick"]["username"]).to eq(moderator.username)
+
+      post "/moderate/editors-picks/pick.json", params: { topic_id: image.id, genre: "landscape" }
+      get "/moderate.json"
+
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["landscape"]["picked"]).to eq(true)
+      expect(status["landscape"]["no_pick"]).to be_nil
+    end
+
+    it "resets no-pick declarations when the week rolls over" do
+      make_image_topic(veteran, created_at: 1.hour.ago)
+      post "/moderate/editors-picks/no-pick.json", params: { genre: "landscape" }
+      DiscourseNpnCritiqueEngagement::NoPick.update_all(created_at: 8.days.ago)
+
+      get "/moderate.json"
+
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["landscape"]["no_pick"]).to be_nil
+    end
+
     it "counts a staged pick for its genre so nobody double-picks it" do
       wildlife_tag = Fabricate(:tag, name: "wildlife")
       staged = make_image_topic(veteran, created_at: 1.hour.ago)

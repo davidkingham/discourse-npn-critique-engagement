@@ -1,7 +1,13 @@
-import { hash } from "@ember/helper";
+import Component from "@glimmer/component";
+import { tracked } from "@glimmer/tracking";
+import { fn, hash } from "@ember/helper";
+import { action } from "@ember/object";
 import { LinkTo } from "@ember/routing";
+import { ajax } from "discourse/lib/ajax";
+import { popupAjaxError } from "discourse/lib/ajax-error";
 import getURL from "discourse/lib/get-url";
 import { userPath } from "discourse/lib/url";
+import DButton from "discourse/ui-kit/d-button";
 import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-template";
 import dFormatDate from "discourse/ui-kit/helpers/d-format-date";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
@@ -16,8 +22,47 @@ function tagUrl(tag) {
   return getURL(`/tag/${tag}`);
 }
 
-export default <template>
-  <section class="npn-moderate">
+export default class NpnModerateDashboard extends Component {
+  @tracked pickStatusOverride = null;
+
+  get pickStatus() {
+    return this.pickStatusOverride ?? this.args.model.pick_status;
+  }
+
+  @action
+  async declareNoPick(genre) {
+    try {
+      const result = await ajax("/moderate/editors-picks/no-pick", {
+        type: "POST",
+        data: { genre: genre.tag },
+      });
+      this.patchGenre(genre.tag, { no_pick: { username: result.username } });
+    } catch (error) {
+      popupAjaxError(error);
+    }
+  }
+
+  @action
+  async undoNoPick(genre) {
+    try {
+      await ajax("/moderate/editors-picks/no-pick", {
+        type: "DELETE",
+        data: { genre: genre.tag },
+      });
+      this.patchGenre(genre.tag, { no_pick: null });
+    } catch (error) {
+      popupAjaxError(error);
+    }
+  }
+
+  patchGenre(tag, patch) {
+    this.pickStatusOverride = this.pickStatus.map((existing) =>
+      existing.tag === tag ? { ...existing, ...patch } : existing
+    );
+  }
+
+  <template>
+    <section class="npn-moderate">
     <header class="npn-moderate__header">
       <h1 class="npn-moderate__title">
         {{dIcon "hand-holding-heart"}}
@@ -167,9 +212,9 @@ export default <template>
           <p class="npn-moderate__hint">
             {{i18n "npn_critique_engagement.moderate.picks_hint"}}
           </p>
-          {{#if @model.pick_status.length}}
+          {{#if this.pickStatus.length}}
             <ul class="npn-moderate__pick-list">
-              {{#each @model.pick_status as |genre|}}
+              {{#each this.pickStatus as |genre|}}
                 <li class="npn-moderate__pick-row">
                   <LinkTo
                     @route="critique-editors-picks"
@@ -186,10 +231,29 @@ export default <template>
                         username=genre.picked_by
                       }}
                     </a>
+                  {{else if genre.no_pick}}
+                    <span class="npn-moderate__pick-none">
+                      {{dIcon "ban"}}
+                      {{i18n
+                        "npn_critique_engagement.moderate.no_pick_by"
+                        username=genre.no_pick.username
+                      }}
+                    </span>
+                    <DButton
+                      @action={{fn this.undoNoPick genre}}
+                      @icon="arrow-rotate-left"
+                      @ariaLabel="npn_critique_engagement.moderate.no_pick_undo"
+                      class="btn-flat btn-small npn-moderate__no-pick-undo"
+                    />
                   {{else}}
                     <span class="npn-moderate__pick-open">
                       {{i18n "npn_critique_engagement.moderate.pick_open"}}
                     </span>
+                    <DButton
+                      @action={{fn this.declareNoPick genre}}
+                      @label="npn_critique_engagement.moderate.no_pick"
+                      class="btn-flat btn-small npn-moderate__no-pick-button"
+                    />
                   {{/if}}
                 </li>
               {{/each}}
@@ -302,4 +366,5 @@ export default <template>
       </div>
     </div>
   </section>
-</template>
+  </template>
+}
