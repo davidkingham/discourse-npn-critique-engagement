@@ -224,6 +224,83 @@ plugins:
     default: -25.0
     type: float
 
+  # --- Fair feed homepage -------------------------------------------------
+  # The composed homepage. Lanes are allocations, not a ranking: the
+  # conversation lane keeps its slots however much the critique category
+  # posts, which is the only thing that stops the highest-volume category
+  # burying every other one. A lane with nothing fresh renders nothing at
+  # all rather than showing stale content.
+
+  npn_fair_feed_enabled:
+    default: false
+    client: true
+
+  # Off by default: anonymous visitors keep Latest, which is the crawlable
+  # surface.
+  npn_fair_feed_anonymous:
+    default: false
+
+  npn_fair_feed_picks_limit:
+    default: 5
+    min: 1
+    max: 12
+
+  # Deliberately small. The waiting lane is a call to action, not the page —
+  # capping it is what keeps a weak photo from shaping a visitor's first
+  # impression of the community.
+  npn_fair_feed_waiting_limit:
+    default: 8
+    min: 1
+    max: 24
+
+  npn_fair_feed_new_members_limit:
+    default: 4
+    min: 1
+    max: 12
+
+  npn_fair_feed_conversation_limit:
+    default: 6
+    min: 1
+    max: 20
+
+  npn_fair_feed_unmet_limit:
+    default: 6
+    min: 1
+    max: 20
+
+  # Categories the "join the conversation" lane draws from. Leave blank to
+  # use every category outside the critique tree.
+  npn_fair_feed_conversation_categories:
+    default: ""
+    type: category_list
+
+  # A lane shows nothing rather than something stale beyond this age.
+  npn_fair_feed_freshness_days:
+    default: 21
+    min: 1
+    max: 120
+
+  # Justified rows: uniform height, variable width, never cropped. Target
+  # height in pixels; rows stretch to fill the container from there.
+  npn_fair_feed_row_height:
+    default: 240
+    min: 120
+    max: 600
+    client: true
+
+  # Aspect clamps. A 3:1 panorama would otherwise eat a whole row and a 2:3
+  # portrait would shrink to a sliver. Past these the image is letterboxed
+  # inside a clamped box — contained, never cropped.
+  npn_fair_feed_min_aspect:
+    default: 0.55
+    type: float
+    client: true
+
+  npn_fair_feed_max_aspect:
+    default: 3.0
+    type: float
+    client: true
+
   npn_critique_new_member_category:
     default: ""
     type: category

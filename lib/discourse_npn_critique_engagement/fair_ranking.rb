@@ -101,6 +101,23 @@ module DiscourseNpnCritiqueEngagement
         )
       end
 
+      # Ordering for lanes outside the critique tree.
+      #
+      # The rolling score deliberately plays no part here: Scorer only counts
+      # replies inside the critique category, so ranking a discussion by it
+      # would demote a member who is active in discussions but doesn't
+      # critique — punishing exactly the behaviour these lanes exist to
+      # encourage. Unanswered first, one per author, newest as the tiebreak.
+      def order_conversation(scope)
+        scope.reorder(
+          Arel.sql(
+            "ROW_NUMBER() OVER (PARTITION BY topics.user_id ORDER BY topics.created_at DESC) ASC, " \
+              "(CASE WHEN topics.posts_count <= 1 THEN 0 ELSE 1 END) ASC, " \
+              "topics.created_at DESC, topics.id DESC",
+          ),
+        )
+      end
+
       # LEFT JOINs, so a member with no rolling score row (nobody active in
       # the window yet) still appears rather than dropping out of the feed.
       # Aliased away from `users` so we never collide with a join core has

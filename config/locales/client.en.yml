@@ -13,6 +13,26 @@ en:
         new_member: "New member"
       user_card:
         label: "Critique engagement (staff only)"
+      feed:
+        lanes:
+          # The headings carry real weight: they are what stops a photo in
+          # the waiting lane reading as "our best work" instead of "someone
+          # here needs help".
+          npn_picks:
+            title: "Editors' picks"
+            description: "Work our moderators singled out this week."
+          npn_waiting:
+            title: "Waiting for a first critique"
+            description: "Nobody has responded to these yet. Be the first."
+          npn_new_members:
+            title: "Say hello"
+            description: "New members who've just introduced themselves."
+          npn_conversation:
+            title: "Join the conversation"
+            description: "Discussions happening away from the critique queue."
+          npn_unmet:
+            title: "Photographers you haven't met"
+            description: "Members whose work you haven't commented on yet."
       leaderboard:
         title: "Critique leaderboard"
         sidebar_text: "Critique leaderboard"

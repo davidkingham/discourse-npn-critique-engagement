@@ -5,6 +5,9 @@ DiscourseNpnCritiqueEngagement::Engine.routes.draw do
   get "/critique-engagement/hall-of-fame" => "leaderboards#hall_of_fame"
   get "/critique-engagement/impact" => "impact#show"
 
+  # Every homepage lane in one request.
+  get "/critique-engagement/feed" => "fair_feed#index"
+
   # Moderator tools live under /moderate — the dashboard at the root, the
   # work surfaces beneath it.
   get "/moderate" => "moderate#show"

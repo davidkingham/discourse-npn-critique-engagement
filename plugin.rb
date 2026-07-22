@@ -28,6 +28,11 @@ register_svg_icon "xmark"
 
 module ::DiscourseNpnCritiqueEngagement
   PLUGIN_NAME = "discourse-npn-critique-engagement"
+
+  # Widths the feed's three layouts ask for, at 1x and 2x. Registered with
+  # core so thumbnail generation doesn't depend on a theme component, and so
+  # every list item carries real dimensions for the box we reserve.
+  THUMBNAIL_SIZES = [[400, 400], [800, 800], [1200, 1200], [2400, 2400]].freeze
 end
 
 require_relative "lib/discourse_npn_critique_engagement/engine"
@@ -37,6 +42,8 @@ after_initialize do
   require_relative "lib/discourse_npn_critique_engagement/formula"
   require_relative "lib/discourse_npn_critique_engagement/scorer"
   require_relative "lib/discourse_npn_critique_engagement/fair_ranking"
+  require_relative "lib/discourse_npn_critique_engagement/topic_query_extension"
+  require_relative "lib/discourse_npn_critique_engagement/feed"
   require_relative "lib/discourse_npn_critique_engagement/badges"
   require_relative "lib/discourse_npn_critique_engagement/recognition"
   require_relative "lib/discourse_npn_critique_engagement/awarded_critiques"
@@ -57,6 +64,7 @@ after_initialize do
   require_relative "app/controllers/discourse_npn_critique_engagement/impact_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/editors_picks_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/moderate_controller"
+  require_relative "app/controllers/discourse_npn_critique_engagement/fair_feed_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/admin/reports_controller"
   require_relative "app/controllers/discourse_npn_critique_engagement/admin/outreach_controller"
   require_relative "app/jobs/regular/npn_finalize_editors_pick"
@@ -157,6 +165,30 @@ after_initialize do
       description: I18n.t("npn_critique_engagement.filter_tips.order_fair"),
     }
     options
+  end
+
+  reloadable_patch { TopicQuery.prepend(DiscourseNpnCritiqueEngagement::TopicQueryExtension) }
+
+  # Take over "/" for the composed homepage. Logged-in members only unless
+  # the setting says otherwise: anonymous visitors keep Latest, which is the
+  # crawlable surface. A member who sets their own homepage preference
+  # overrides this anyway — core handles that.
+  # apply_modifier forwards its extra arguments positionally, so HomepageHelper's
+  # `request:`/`current_user:` arrive as a single hash rather than as keywords.
+  register_modifier(:custom_homepage_enabled) do |enabled, args|
+    if enabled || !DiscourseNpnCritiqueEngagement::Feed.enabled?
+      enabled
+    else
+      args[:current_user].present? || SiteSetting.npn_fair_feed_anonymous
+    end
+  end
+
+  # Thumbnails for the feed's layouts. Registering the sizes here rather than
+  # relying on a theme component is what lets every lane reserve the right
+  # box before an image loads: core serializes real width/height per size on
+  # every topic list item.
+  DiscourseNpnCritiqueEngagement::THUMBNAIL_SIZES.each do |size|
+    register_topic_thumbnail_size(size)
   end
 
   Discourse::Application.routes.append { mount ::DiscourseNpnCritiqueEngagement::Engine, at: "/" }
