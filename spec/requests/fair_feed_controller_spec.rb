@@ -109,6 +109,17 @@ describe DiscourseNpnCritiqueEngagement::FairFeedController do
       expect(topic_ids("npn_unmet")).not_to include(already_met.id)
     end
 
+    it "keeps the auto-generated category description topics out" do
+      about = Fabricate(:topic, category: discussion_category, user: Discourse.system_user)
+      Fabricate(:post, topic: about, user: Discourse.system_user)
+      discussion_category.update!(topic_id: about.id)
+      real = make_topic(discussion_category)
+
+      get "/critique-engagement/feed.json"
+
+      expect(topic_ids("npn_conversation")).to contain_exactly(real.id)
+    end
+
     it "leaves out categories the viewer cannot see" do
       secret = Fabricate(:private_category, group: Fabricate(:group))
       hidden = make_topic(secret)

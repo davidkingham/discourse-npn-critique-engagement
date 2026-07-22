@@ -1,9 +1,11 @@
 import Component from "@glimmer/component";
 import { service } from "@ember/service";
 import { trustHTML } from "@ember/template";
+import { emojiUnescape } from "discourse/lib/text";
 import { eq } from "discourse/truth-helpers";
 import dAvatar from "discourse/ui-kit/helpers/d-avatar";
 import dCategoryLink from "discourse/ui-kit/helpers/d-category-link";
+import dDirSpan from "discourse/ui-kit/helpers/d-dir-span";
 import { i18n } from "discourse-i18n";
 import NpnFeedCard from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-feed-card";
 import {
@@ -30,6 +32,10 @@ export default class NpnFeedLane extends Component {
   // Flex-basis and flex-grow both scale with the aspect ratio, so every item
   // in a justified row lands on the same height without measuring anything
   // in JavaScript — and without cropping, which is the whole point.
+  //
+  // max-width is what keeps an under-full row honest: flex-grow would
+  // otherwise stretch two items across the whole container and tower over
+  // the full rows above them. Capped, the leftover width just stays empty.
   itemStyle = (topic) => {
     const aspect = clampAspect(
       aspectFor(topic),
@@ -37,7 +43,8 @@ export default class NpnFeedLane extends Component {
       this.siteSettings.npn_fair_feed_max_aspect
     );
     const basis = aspect * this.siteSettings.npn_fair_feed_row_height;
-    return trustHTML(`flex: ${aspect} 1 ${basis}px;`);
+    const cap = aspect * this.siteSettings.npn_fair_feed_max_row_height;
+    return trustHTML(`flex: ${aspect} 1 ${basis}px; max-width: ${cap}px;`);
   };
 
   get heading() {
@@ -107,7 +114,15 @@ export default class NpnFeedLane extends Component {
               <a class="npn-feed-row__title" href={{topic.lastUnreadUrl}}>
                 {{topic.fancyTitle}}
               </a>
-              <p class="npn-feed-row__excerpt">{{topic.excerpt}}</p>
+              {{#if topic.npn_excerpt}}
+                {{! rendered as HTML exactly as core's TopicExcerpt does:
+                topics.excerpt is server-generated from sanitized cooked
+                HTML, and contains entities that would otherwise show
+                literally }}
+                <p class="npn-feed-row__excerpt">
+                  {{dDirSpan (emojiUnescape topic.npn_excerpt) htmlSafe="true"}}
+                </p>
+              {{/if}}
               <div class="npn-feed-row__meta">
                 {{dCategoryLink topic.category}}
                 <span class="npn-feed-row__posters">
@@ -115,8 +130,17 @@ export default class NpnFeedLane extends Component {
                     {{dAvatar poster.user imageSize="tiny"}}
                   {{/each}}
                 </span>
+                {{! a bare "0" reads as broken; no replies yet is the
+                interesting state, so say it }}
                 <span class="npn-feed-row__replies">
-                  {{topic.replyCount}}
+                  {{#if topic.replyCount}}
+                    {{i18n
+                      "npn_critique_engagement.feed.replies"
+                      count=topic.replyCount
+                    }}
+                  {{else}}
+                    {{i18n "npn_critique_engagement.feed.no_replies"}}
+                  {{/if}}
                 </span>
               </div>
             </li>

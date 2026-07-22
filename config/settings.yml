@@ -288,6 +288,15 @@ plugins:
     max: 600
     client: true
 
+  # A row that isn't full still stretches its items to fill the width, which
+  # left unchecked makes a two-item row tower over a full one. This caps how
+  # tall a row may grow; the leftover width stays empty instead.
+  npn_fair_feed_max_row_height:
+    default: 360
+    min: 120
+    max: 900
+    client: true
+
   # Aspect clamps. A 3:1 panorama would otherwise eat a whole row and a 2:3
   # portrait would shrink to a sliver. Past these the image is letterboxed
   # inside a clamped box — contained, never cropped.

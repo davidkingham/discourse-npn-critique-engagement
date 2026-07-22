@@ -14,6 +14,10 @@ en:
       user_card:
         label: "Critique engagement (staff only)"
       feed:
+        replies:
+          one: "%{count} reply"
+          other: "%{count} replies"
+        no_replies: "No replies yet"
         lanes:
           # The headings carry real weight: they are what stops a photo in
           # the waiting lane reading as "our best work" instead of "someone

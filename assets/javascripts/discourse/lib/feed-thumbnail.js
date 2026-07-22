@@ -34,6 +34,12 @@ export function thumbnailFor(topic, targetWidth) {
   );
 }
 
+// A topic with no image gets no reserved box at all. An empty grey rectangle
+// where a photo should be reads as a broken image, not as "this one is text".
+export function hasImage(topic) {
+  return (topic?.thumbnails ?? []).some((thumb) => thumb.url);
+}
+
 function originalThumbnail(topic) {
   // The original is serialized with null max_width/max_height, and it is the
   // only entry guaranteed to carry the true aspect ratio — optimized sizes

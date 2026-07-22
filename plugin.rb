@@ -139,6 +139,20 @@ after_initialize do
     { created_topics: row.created_topics, topics_replied: row.topics_replied } if row&.nudge_worthy?
   end
 
+  # Core only serializes `excerpt` on a topic list for pinned topics, or when
+  # a site-wide setting or theme modifier turns it on. The conversation lane
+  # is text rows — an excerpt is most of what makes one worth reading — so
+  # the feed carries its own. `topics.excerpt` is a stored column, so this
+  # costs nothing beyond the bytes.
+  add_to_serializer(
+    :topic_list_item,
+    :npn_excerpt,
+    include_condition: -> do
+      SiteSetting.npn_critique_engagement_enabled && SiteSetting.npn_fair_feed_enabled &&
+        object.excerpt.present?
+    end,
+  ) { object.excerpt }
+
   # `order:fair` — the equity ordering, as a first-class sort. Registering it
   # here rather than building a bespoke list means /filter?q=... order:fair is
   # linkable and paginated, and the same expression can back the category
