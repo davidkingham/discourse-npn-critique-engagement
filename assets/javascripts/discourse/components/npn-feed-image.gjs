@@ -12,22 +12,35 @@ import {
 //
 // Outside the hero lane the fit is always `contain`. When the box matches the
 // image's aspect exactly that is indistinguishable from `cover`; when the
-// aspect had to be clamped (a panorama, a tall portrait) it letterboxes
-// instead of cropping. NPN never crops a member's work.
+// aspect had to be clamped (a panorama, a tall portrait) the leftover space
+// is filled with a blurred, scaled copy of the same photo rather than a flat
+// bar — the treatment the topic-thumbnails theme component uses. NPN never
+// crops a member's work, and the blur keeps a clamped frame from reading as
+// letterboxed dead space.
 export default class NpnFeedImage extends Component {
   @service siteSettings;
 
-  get aspect() {
-    const actual = aspectFor(this.args.topic);
+  get actualAspect() {
+    return aspectFor(this.args.topic);
+  }
 
+  get aspect() {
     if (this.args.fixedAspect) {
       return this.args.fixedAspect;
     }
 
     return clampAspect(
-      actual,
+      this.actualAspect,
       this.siteSettings.npn_fair_feed_min_aspect,
       this.siteSettings.npn_fair_feed_max_aspect
+    );
+  }
+
+  // The box was clamped away from the photo's true shape, so `contain` will
+  // leave bars. Only then do we need the blurred fill behind it.
+  get needsFill() {
+    return (
+      !this.args.fixedAspect && Math.abs(this.actualAspect - this.aspect) > 0.01
     );
   }
 
@@ -35,8 +48,12 @@ export default class NpnFeedImage extends Component {
     return thumbnailFor(this.args.topic, this.args.targetWidth ?? 400);
   }
 
-  get style() {
+  get boxStyle() {
     return trustHTML(`aspect-ratio: ${this.aspect};`);
+  }
+
+  get fillStyle() {
+    return trustHTML(`background-image: url(${this.thumbnail.url});`);
   }
 
   <template>
@@ -47,10 +64,18 @@ export default class NpnFeedImage extends Component {
           'npn-feed-image--cropped'
           'npn-feed-image--contained'
         }}"
-      style={{this.style}}
+      style={{this.boxStyle}}
     >
       {{#if this.thumbnail}}
+        {{#if this.needsFill}}
+          <div
+            class="npn-feed-image__fill"
+            style={{this.fillStyle}}
+            aria-hidden="true"
+          ></div>
+        {{/if}}
         <img
+          class="npn-feed-image__img"
           src={{this.thumbnail.url}}
           width={{this.thumbnail.width}}
           height={{this.thumbnail.height}}
