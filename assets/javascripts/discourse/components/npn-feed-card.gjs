@@ -37,7 +37,13 @@ const NpnFeedCard = <template>
       </div>
     {{/if}}
     <div class="npn-feed-card__meta">
-      <span class="npn-feed-card__title">{{@topic.fancyTitle}}</span>
+      {{! On a photo card the image is the content and the title is just
+      clutter; the alt text keeps it for screen readers. A text-only card
+      (a new-member intro with no photo) has nothing else to show, so it
+      keeps its title. }}
+      {{#unless (hasImage @topic)}}
+        <span class="npn-feed-card__title">{{@topic.fancyTitle}}</span>
+      {{/unless}}
       <span class="npn-feed-card__byline">
         {{! the poster, not the last replier — these lanes are about whose
         work it is }}
