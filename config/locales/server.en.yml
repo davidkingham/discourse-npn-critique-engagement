@@ -20,6 +20,13 @@ en:
     npn_critique_coverage_excluded_tags: "Topics with these tags don't need critique coverage. Weekly-challenge announcement topics are always excluded; challenge entries are covered."
     npn_critique_coverage_excluded_title_prefixes: "Topics whose title starts with any of these don't need critique coverage — catches announcement topics created before the weekly-challenge plugin marked them."
     npn_critique_pick_excluded_tags: "Tags that aren't pick genres and stay off the weekly pick status board (style and attribute tags)."
+    npn_fair_waiting_boost_per_day: "How much a topic with no substantive critique climbs the fair ordering for each day it keeps waiting."
+    npn_fair_waiting_boost_cap: "Ceiling on the waiting boost, so a long-neglected topic can't pin itself to the top forever."
+    npn_fair_new_member_boost: "One-off boost in the fair ordering while the poster is inside the new-member grace window."
+    npn_fair_recency_weight: "Weight of ordinary recency decay in the fair ordering — how much the feed favours fresh posts."
+    npn_fair_recency_half_life_days: "Days over which the recency term halves."
+    npn_fair_reciprocity_weight: "How strongly the poster's give-and-take standing shifts their topics in the fair ordering."
+    npn_fair_reciprocity_floor: "The most the standing term can ever subtract. Floored on purpose: a low score moves a topic down, but must never bury it."
     npn_critique_new_member_category: "The New Members category (with its subcategories) surfaced on the moderator dashboard."
     npn_critique_new_member_min_replies: "New-member posts stay on the dashboard until they have this many replies — every new member deserves more than one response."
     npn_critique_claim_expiry_days: "Outreach claims quietly expire after this many days so a forgotten claim never blocks a member."
@@ -88,6 +95,8 @@ en:
 
         Thank you for diving straight in. Keep sharing your eye — members who critique regularly get more feedback on their own work, too.
   npn_critique_engagement:
+    filter_tips:
+      order_fair: "fairly — work still waiting for a first critique, spread across members"
     editors_picks:
       already_picked: "This topic is already an editors' pick."
       not_picked: "This topic isn't an editors' pick."

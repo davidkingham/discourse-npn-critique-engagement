@@ -42,49 +42,20 @@ module DiscourseNpnCritiqueEngagement
       raise Discourse::InvalidAccess.new if !current_user&.staff?
     end
 
-    # Topics still waiting for a substantive critique (the scorer's own
-    # definition: 100+ characters after quote-stripping, from someone other
-    # than the poster).
+    # Topics still waiting for a substantive critique. The candidate
+    # definition lives in FairRanking so this queue and the member-facing
+    # feed can never disagree about what "still waiting" means; the ordering
+    # stays triage order, because a moderator works this list top-down and
+    # wants strict priority rather than the feed's round-robin.
     def coverage
-      return { total: 0, topics: [] } if category_ids.blank?
-
-      topic_ids = DB.query_single(<<~SQL, coverage_params)
-        SELECT t.id
-        FROM topics t
-        WHERE t.category_id IN (:category_ids)
-          AND t.archetype = 'regular'
-          AND t.deleted_at IS NULL
-          AND t.visible
-          AND t.user_id > 0
-          AND t.created_at >= :cutoff
-          AND NOT EXISTS (
-            SELECT 1
-            FROM posts p
-            WHERE p.topic_id = t.id
-              AND p.post_number > 1
-              AND p.deleted_at IS NULL
-              AND p.post_type = 1
-              AND p.user_id > 0
-              AND p.user_id <> t.user_id
-              AND LENGTH(REGEXP_REPLACE(p.raw, :quote_pattern, '', 'gi')) >= :min_length
-          )
-          AND NOT EXISTS (
-            SELECT 1
-            FROM topic_custom_fields tcf
-            WHERE tcf.topic_id = t.id AND tcf.name = 'npn_weekly_challenge_slug'
-          )
-          #{coverage_excluded_tags_fragment}
-          #{coverage_excluded_titles_fragment}
-      SQL
-
       topics =
-        Topic
-          .where(id: topic_ids)
+        FairRanking
+          .candidates
           .includes(:user, :image_upload, :tags)
           .reject { |topic| topic.user.nil? }
       scores = Score.where(user_id: topics.map(&:user_id).uniq).index_by(&:user_id)
 
-      sorted = topics.sort_by { |topic| coverage_sort_key(topic, scores[topic.user_id]) }
+      sorted = topics.sort_by { |topic| FairRanking.triage_sort_key(topic, scores[topic.user_id]) }
 
       {
         total: sorted.size,
@@ -95,17 +66,8 @@ module DiscourseNpnCritiqueEngagement
       }
     end
 
-    # New members outrank everything — this is the moment that decides
-    # whether they stay. After that, the members who give the most feedback
-    # deserve it back first; oldest post breaks ties.
-    def coverage_sort_key(topic, score_row)
-      new_member = new_member?(topic.user, score_row)
-      standing = score_row ? -score_row.score : Float::INFINITY
-      [new_member ? 0 : 1, standing, topic.created_at]
-    end
-
     def new_member?(user, score_row)
-      score_row ? score_row.new_member? : Formula.in_grace_period?(user)
+      FairRanking.new_member?(user, score_row)
     end
 
     def coverage_payload(topic, score_row)
@@ -302,43 +264,6 @@ module DiscourseNpnCritiqueEngagement
       SiteSetting.npn_critique_pick_excluded_tags.to_s.split("|")
     end
 
-    # Weekly-challenge ANNOUNCEMENT topics (marked by the weekly-challenge
-    # plugin's custom field, excluded in the query above) never need
-    # critiques — but challenge entries do, so exclusion by tag is opt-in
-    # via the setting. The fragment is a trusted constant shape; tag names
-    # travel as a bind param.
-    def coverage_excluded_tags_fragment
-      return "" if coverage_excluded_tags.blank?
-
-      <<~SQL
-        AND NOT EXISTS (
-          SELECT 1
-          FROM topic_tags tt
-          JOIN tags excluded ON excluded.id = tt.tag_id
-          WHERE tt.topic_id = t.id AND excluded.name IN (:excluded_tags)
-        )
-      SQL
-    end
-
-    def coverage_excluded_tags
-      SiteSetting.npn_critique_coverage_excluded_tags.to_s.split("|")
-    end
-
-    # Announcement topics created before the weekly-challenge plugin stamped
-    # its marker only reveal themselves by title. One bound param per prefix;
-    # the fragment shape itself contains no runtime values.
-    def coverage_excluded_titles_fragment
-      return "" if coverage_excluded_title_prefixes.blank?
-
-      conditions =
-        coverage_excluded_title_prefixes.each_index.map { |i| "t.title ILIKE :title_prefix_#{i}" }
-      "AND NOT (#{conditions.join(" OR ")})"
-    end
-
-    def coverage_excluded_title_prefixes
-      SiteSetting.npn_critique_coverage_excluded_title_prefixes.to_s.split("|")
-    end
-
     def mini_rows(scope)
       rows = scope.includes(:user).limit(MINI_LIST_LIMIT).reject { |row| row.user.nil? }
       serialize_data(
@@ -347,20 +272,6 @@ module DiscourseNpnCritiqueEngagement
         outreach_logs: OutreachLog.latest_for(rows.map(&:user_id)),
         claims: OutreachClaim.active_for(rows.map(&:user_id)),
       )
-    end
-
-    def coverage_params
-      params = {
-        category_ids: category_ids,
-        cutoff: SiteSetting.npn_critique_coverage_days.days.ago,
-        quote_pattern: Scorer::QUOTE_PATTERN,
-        min_length: SiteSetting.npn_critique_min_reply_length,
-      }
-      params[:excluded_tags] = coverage_excluded_tags if coverage_excluded_tags.present?
-      coverage_excluded_title_prefixes.each_with_index do |prefix, i|
-        params[:"title_prefix_#{i}"] = "#{prefix}%"
-      end
-      params
     end
 
     def week_start
@@ -372,12 +283,7 @@ module DiscourseNpnCritiqueEngagement
     end
 
     def category_ids
-      @category_ids ||=
-        if (category_id = SiteSetting.npn_critique_category.presence&.to_i)
-          Category.where("id = :id OR parent_category_id = :id", id: category_id).pluck(:id)
-        else
-          []
-        end
+      @category_ids ||= FairRanking.category_ids
     end
   end
 end

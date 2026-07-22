@@ -36,6 +36,7 @@ after_initialize do
   require_relative "lib/discourse_npn_critique_engagement/has_tier"
   require_relative "lib/discourse_npn_critique_engagement/formula"
   require_relative "lib/discourse_npn_critique_engagement/scorer"
+  require_relative "lib/discourse_npn_critique_engagement/fair_ranking"
   require_relative "lib/discourse_npn_critique_engagement/badges"
   require_relative "lib/discourse_npn_critique_engagement/recognition"
   require_relative "lib/discourse_npn_critique_engagement/awarded_critiques"
@@ -128,6 +129,34 @@ after_initialize do
   ) do
     row = DiscourseNpnCritiqueEngagement::Score.current_for(object)
     { created_topics: row.created_topics, topics_replied: row.topics_replied } if row&.nudge_worthy?
+  end
+
+  # `order:fair` — the equity ordering, as a first-class sort. Registering it
+  # here rather than building a bespoke list means /filter?q=... order:fair is
+  # linkable and paginated, and the same expression can back the category
+  # sort dropdown and the homepage feed. An unrecognized order: key falls
+  # through to the custom filter registry in TopicsFilter#order_by.
+  add_filter_custom_filter("order:fair") do |scope, direction, _guardian|
+    DiscourseNpnCritiqueEngagement::FairRanking.order_fair(scope, direction)
+  end
+
+  # The same ordering for TopicQuery-backed lists, so a category whose
+  # sort_order is "fair" (and /latest?order=fair) honours it too.
+  register_modifier(
+    :topic_query_apply_ordering_result,
+  ) do |result, order_option, sort_dir, _opts, _tq|
+    if order_option.to_s == "fair"
+      DiscourseNpnCritiqueEngagement::FairRanking.order_fair(result, sort_dir)
+    end
+  end
+
+  # Autocomplete tip on the /filter input.
+  register_modifier(:topics_filter_options) do |options, _guardian|
+    options << {
+      name: "order:fair",
+      description: I18n.t("npn_critique_engagement.filter_tips.order_fair"),
+    }
+    options
   end
 
   Discourse::Application.routes.append { mount ::DiscourseNpnCritiqueEngagement::Engine, at: "/" }

@@ -186,6 +186,44 @@ plugins:
     type: tag_list
     client: true
 
+  # --- Fair feed ranking --------------------------------------------------
+  # The weights behind `order:fair` and the homepage feed. Four independent
+  # terms: how fast a neglected topic climbs, the new-member boost, ordinary
+  # recency decay, and the author's give-and-take standing. The standing term
+  # is deliberately floored — it can move a topic down but must never bury
+  # it, so a quiet member never becomes invisible and the negative signal
+  # never leaks onto a public surface.
+
+  npn_fair_waiting_boost_per_day:
+    default: 6.0
+    type: float
+
+  npn_fair_waiting_boost_cap:
+    default: 60.0
+    type: float
+
+  npn_fair_new_member_boost:
+    default: 80.0
+    type: float
+
+  npn_fair_recency_weight:
+    default: 40.0
+    type: float
+
+  npn_fair_recency_half_life_days:
+    default: 3.0
+    type: float
+    min: 0.5
+
+  npn_fair_reciprocity_weight:
+    default: 0.15
+    type: float
+
+  # Never below this, no matter how negative the author's standing.
+  npn_fair_reciprocity_floor:
+    default: -25.0
+    type: float
+
   npn_critique_new_member_category:
     default: ""
     type: category
