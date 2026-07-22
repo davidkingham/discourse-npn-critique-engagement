@@ -240,6 +240,17 @@ plugins:
   npn_fair_feed_anonymous:
     default: false
 
+  # Who gets the custom homepage. Empty means every logged-in member (plus
+  # anonymous, if that setting is on) — the full rollout. Set it to a group
+  # to beta-test in production: only those members see the feed, everyone
+  # else keeps Latest, and anonymous visitors are excluded regardless of the
+  # anonymous setting.
+  npn_fair_feed_allowed_groups:
+    type: group_list
+    list_type: compact
+    default: ""
+    allow_any: false
+
   # One pick per genre, so this caps how many genres the carousel shows. The
   # carousel scrolls, so a value at or above the genre count shows them all.
   npn_fair_feed_picks_limit:

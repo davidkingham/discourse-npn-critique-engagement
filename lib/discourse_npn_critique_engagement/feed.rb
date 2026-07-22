@@ -24,6 +24,24 @@ module DiscourseNpnCritiqueEngagement
       SiteSetting.npn_critique_engagement_enabled && SiteSetting.npn_fair_feed_enabled
     end
 
+    # Whether this viewer should get the custom homepage.
+    #
+    # An empty allowed-groups list is the full rollout: every logged-in
+    # member, plus anonymous if that setting is on. Once a group is set the
+    # feed is a restricted beta — only members of those groups see it, and
+    # anonymous visitors are excluded regardless of the anonymous setting, so
+    # a production test never leaks to logged-out traffic.
+    def visible_to?(user)
+      return false unless enabled?
+
+      groups = SiteSetting.npn_fair_feed_allowed_groups_map
+      if groups.present?
+        user.present? && user.in_any_groups?(groups)
+      else
+        user.present? || SiteSetting.npn_fair_feed_anonymous
+      end
+    end
+
     # Every lane the viewer should see, in display order, empty ones dropped.
     # `layout` travels to the client because each lane needs a different one:
     # picks are cropped covers in a scrolling carousel, waiting must never

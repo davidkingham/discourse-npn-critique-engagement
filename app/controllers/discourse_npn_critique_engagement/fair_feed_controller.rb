@@ -9,8 +9,9 @@ module DiscourseNpnCritiqueEngagement
     requires_plugin DiscourseNpnCritiqueEngagement::PLUGIN_NAME
 
     def index
-      raise Discourse::NotFound if !Feed.enabled?
-      raise Discourse::NotFound if current_user.nil? && !SiteSetting.npn_fair_feed_anonymous
+      # Same gate as the homepage takeover, so a member outside the beta group
+      # can't reach the feed by hitting this endpoint directly.
+      raise Discourse::NotFound unless Feed.visible_to?(current_user)
 
       lanes =
         Feed

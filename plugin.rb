@@ -193,11 +193,7 @@ after_initialize do
   # apply_modifier forwards its extra arguments positionally, so HomepageHelper's
   # `request:`/`current_user:` arrive as a single hash rather than as keywords.
   register_modifier(:custom_homepage_enabled) do |enabled, args|
-    if enabled || !DiscourseNpnCritiqueEngagement::Feed.enabled?
-      enabled
-    else
-      args[:current_user].present? || SiteSetting.npn_fair_feed_anonymous
-    end
+    enabled || DiscourseNpnCritiqueEngagement::Feed.visible_to?(args[:current_user])
   end
 
   # Thumbnails for the feed's layouts. Registering the sizes here rather than

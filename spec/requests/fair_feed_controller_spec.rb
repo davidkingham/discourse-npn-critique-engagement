@@ -258,6 +258,47 @@ describe DiscourseNpnCritiqueEngagement::FairFeedController do
     end
   end
 
+  describe "restricted to a beta group" do
+    fab!(:beta, :group)
+    fab!(:tester) { Fabricate(:user, created_at: 6.months.ago) }
+
+    before do
+      beta.add(tester)
+      SiteSetting.npn_fair_feed_allowed_groups = beta.id.to_s
+    end
+
+    it "gives the homepage and the feed to a member of the group" do
+      expect(HomepageHelper.resolve(nil, tester)).to eq("custom")
+
+      sign_in(tester)
+      make_topic(critique_category)
+      get "/critique-engagement/feed.json"
+
+      expect(response.status).to eq(200)
+    end
+
+    it "leaves everyone outside the group on Latest, feed included" do
+      expect(HomepageHelper.resolve(nil, viewer)).not_to eq("custom")
+
+      sign_in(viewer)
+      make_topic(critique_category)
+      get "/critique-engagement/feed.json"
+
+      expect(response.status).to eq(404)
+    end
+
+    it "excludes anonymous visitors even with the anonymous setting on" do
+      SiteSetting.npn_fair_feed_anonymous = true
+
+      expect(HomepageHelper.resolve(nil, nil)).not_to eq("custom")
+
+      make_topic(critique_category)
+      get "/critique-engagement/feed.json"
+
+      expect(response.status).to eq(404)
+    end
+  end
+
   it "404s when the feed is switched off" do
     SiteSetting.npn_fair_feed_enabled = false
     sign_in(viewer)
