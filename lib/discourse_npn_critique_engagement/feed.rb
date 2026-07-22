@@ -26,11 +26,11 @@ module DiscourseNpnCritiqueEngagement
 
     # Every lane the viewer should see, in display order, empty ones dropped.
     # `layout` travels to the client because each lane needs a different one:
-    # picks are cropped covers, waiting must never crop and must read in rank
-    # order, conversations carry no image at all.
+    # picks are cropped covers in a scrolling carousel, waiting must never
+    # crop and must read in rank order, conversations carry no image at all.
     def lanes(user)
       [
-        lane("npn_picks", "hero", picks(user)),
+        picks_lane(user),
         lane("npn_waiting", "justified", waiting(user)),
         lane("npn_new_members", "cards", new_members(user)),
         lane("npn_conversation", "rows", conversation(user)),
@@ -38,23 +38,122 @@ module DiscourseNpnCritiqueEngagement
       ].compact
     end
 
-    def lane(name, layout, list)
-      list && { name: name, layout: layout, list: list }
+    def lane(name, layout, list, extra = {})
+      list && { name: name, layout: layout, list: list, **extra }
     end
 
-    # Curated covers: recent editors' picks. Cropping is acceptable here and
-    # nowhere else — these are covers, not the work itself.
-    def picks(user)
+    # Curated covers, one per genre. A row of the most-recent picks alone
+    # tends to repeat a genre — three landscapes in a row says nothing about
+    # the breadth of the community, which is the whole job of a shop-window
+    # lane on a page that new members land on. So the carousel shows the
+    # latest pick in each genre instead, newest genre first, and carries a
+    # {topic_id => genre} map the client labels each card with. Cropping is
+    # acceptable here and nowhere else — these are covers, not the work.
+    def picks_lane(user)
+      chosen = latest_pick_per_genre
+      return nil if chosen.blank?
+
+      ordered_ids = chosen.map { |pick| pick[:topic_id] }
+      genres = chosen.to_h { |pick| [pick[:topic_id], pick[:genre]] }
+
+      list =
+        build(user, "npn_picks", ordered_ids.size) do |scope|
+          scope.where(id: ordered_ids).reorder(
+            Arel.sql(
+              ActiveRecord::Base.sanitize_sql_array(
+                ["array_position(ARRAY[?]::bigint[], topics.id)", ordered_ids],
+              ),
+            ),
+          )
+        end
+      return nil if list.nil?
+
+      lane("npn_picks", "carousel", list, genres: genres)
+    end
+
+    # The latest pick in each genre, newest pick first, capped. A pick is a
+    # topic carrying the pick tag (so manually-tagged picks still count); its
+    # genre is the one the moderator declared on the pick note or the staged
+    # pick, falling back to the topic's own first genre tag for legacy picks
+    # that predate genre recording.
+    def latest_pick_per_genre
+      candidates = tagged_pick_topics
+      return [] if candidates.blank?
+
+      genres = declared_pick_genres(candidates.map(&:id))
+      limit = SiteSetting.npn_fair_feed_picks_limit
+
+      seen = Set.new
+      chosen = []
+      candidates.each do |topic|
+        genre = genres[topic.id] || first_genre_tag(topic)
+        # Legacy picks with no genre at all still show, each as its own slot,
+        # rather than collapsing together under a nil key.
+        key = genre.presence || "topic-#{topic.id}"
+        next if seen.include?(key)
+
+        seen << key
+        chosen << { topic_id: topic.id, genre: genre }
+        break if chosen.size >= limit
+      end
+      chosen
+    end
+
+    # Pick topics in the critique tree, fresh and visible, newest first. The
+    # tag is the source of truth for "is a pick"; recency is the topic's own
+    # age, matching how the lane ordered before.
+    def tagged_pick_topics
       tag_names = SiteSetting.npn_critique_editors_pick_tag.to_s.split("|").reject(&:blank?)
       tag_ids = tag_names.present? ? Tag.where(name: tag_names).pluck(:id) : []
-      return nil if tag_ids.blank?
+      cats = FairRanking.category_ids
+      return [] if tag_ids.blank? || cats.blank?
 
-      build(user, "npn_picks", SiteSetting.npn_fair_feed_picks_limit) do |scope|
-        scope
-          .where("topics.id IN (SELECT topic_id FROM topic_tags WHERE tag_id IN (?))", tag_ids)
-          .where("topics.created_at >= ?", freshness_cutoff)
-          .reorder("topics.created_at DESC, topics.id DESC")
+      Topic
+        .where(category_id: cats)
+        .where(archetype: Archetype.default, deleted_at: nil, visible: true)
+        .where("topics.user_id > 0")
+        .where("topics.created_at >= ?", freshness_cutoff)
+        .where("topics.id IN (SELECT topic_id FROM topic_tags WHERE tag_id IN (?))", tag_ids)
+        .includes(:tags)
+        .order("topics.created_at DESC, topics.id DESC")
+        .to_a
+    end
+
+    # {topic_id => declared genre}. The pick note's genre wins over a staged
+    # pick's, and the most recent note wins within a topic.
+    def declared_pick_genres(topic_ids)
+      return {} if topic_ids.blank?
+
+      note_ids_by_topic =
+        Post
+          .where(topic_id: topic_ids, action_code: EditorsPick::ACTION_CODE, deleted_at: nil)
+          .order(:created_at)
+          .pluck(:topic_id, :id)
+          .to_h # later notes overwrite earlier, so the newest note per topic wins
+      genre_by_note =
+        PostCustomField
+          .where(post_id: note_ids_by_topic.values, name: EditorsPick::GENRE_FIELD)
+          .pluck(:post_id, :value)
+          .to_h
+
+      genres = {}
+      note_ids_by_topic.each do |topic_id, note_id|
+        value = genre_by_note[note_id]
+        genres[topic_id] = value if value.present?
       end
+
+      # Staged picks fill in for anything a finalized note didn't cover.
+      PendingPick
+        .where(topic_id: topic_ids)
+        .where.not(genre: nil)
+        .pluck(:topic_id, :genre)
+        .each { |topic_id, genre| genres[topic_id] ||= genre if genre.present? }
+
+      genres
+    end
+
+    def first_genre_tag(topic)
+      (topic.tags.map(&:name).sort - GenreTags.non_genre_tags).first
     end
 
     # The equity lane. Small on purpose: a call to action, not the page.

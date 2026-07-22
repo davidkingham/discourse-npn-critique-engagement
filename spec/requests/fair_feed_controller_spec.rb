@@ -22,6 +22,31 @@ describe DiscourseNpnCritiqueEngagement::FairFeedController do
     topic
   end
 
+  # A finalized editors' pick: the pick tag plus a note carrying the declared
+  # genre, the way EditorsPick.finalize! records it.
+  def tag(name)
+    Tag.find_or_create_by!(name: name)
+  end
+
+  def make_pick(genre, created_at: 1.hour.ago)
+    topic = make_topic(critique_category, created_at: created_at)
+    topic.tags = [tag("editors-pick")]
+    note =
+      topic.add_moderator_post(
+        Discourse.system_user,
+        "great work",
+        post_type: Post.types[:small_action],
+        action_code: DiscourseNpnCritiqueEngagement::EditorsPick::ACTION_CODE,
+      )
+    note.custom_fields[DiscourseNpnCritiqueEngagement::EditorsPick::GENRE_FIELD] = genre
+    note.save_custom_fields
+    topic
+  end
+
+  def pick_topics
+    lane("npn_picks")["topic_list"]["topics"]
+  end
+
   def lanes
     response.parsed_body["lanes"]
   end
@@ -40,13 +65,54 @@ describe DiscourseNpnCritiqueEngagement::FairFeedController do
     it "returns each lane with the layout it should render as" do
       make_topic(critique_category)
       make_topic(discussion_category)
+      make_pick("birds")
 
       get "/critique-engagement/feed.json"
 
       expect(response.status).to eq(200)
       layouts = lanes.to_h { |entry| [entry["name"], entry["layout"]] }
+      expect(layouts["npn_picks"]).to eq("carousel")
       expect(layouts["npn_waiting"]).to eq("justified")
       expect(layouts["npn_conversation"]).to eq("rows")
+    end
+
+    describe "the editors' picks carousel" do
+      it "shows one pick per genre, most recent genre first, each labeled" do
+        make_pick("birds", created_at: 3.hours.ago)
+        make_pick("landscape", created_at: 1.hour.ago)
+
+        get "/critique-engagement/feed.json"
+
+        genres = pick_topics.map { |topic| topic["npn_pick_genre"] }
+        expect(genres).to eq(%w[landscape birds])
+      end
+
+      it "collapses several picks in one genre down to the most recent" do
+        make_pick("birds", created_at: 5.hours.ago)
+        newest_bird = make_pick("birds", created_at: 1.hour.ago)
+
+        get "/critique-engagement/feed.json"
+
+        expect(pick_topics.map { |topic| topic["id"] }).to eq([newest_bird.id])
+        expect(pick_topics.first["npn_pick_genre"]).to eq("birds")
+      end
+
+      it "falls back to a topic's genre tag when the pick declared none" do
+        topic = make_topic(critique_category)
+        topic.tags = [tag("editors-pick"), tag("macro")]
+
+        get "/critique-engagement/feed.json"
+
+        expect(pick_topics.first["npn_pick_genre"]).to eq("macro")
+      end
+
+      it "drops the lane when nothing has been picked" do
+        make_topic(critique_category)
+
+        get "/critique-engagement/feed.json"
+
+        expect(lanes.map { |entry| entry["name"] }).not_to include("npn_picks")
+      end
     end
 
     it "drops a lane entirely rather than returning it empty" do

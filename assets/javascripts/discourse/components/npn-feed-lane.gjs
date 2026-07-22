@@ -73,14 +73,19 @@ export default class NpnFeedLane extends Component {
         <p class="npn-feed-lane__description">{{this.description}}</p>
       </header>
 
-      {{#if (eq @lane.layout "hero")}}
-        <div class="npn-feed-lane__hero">
+      {{#if (eq @lane.layout "carousel")}}
+        {{! one pick per genre; a horizontal scroll keeps each cover at a real
+        size instead of shrinking nine covers to fit one row }}
+        <div class="npn-feed-lane__carousel">
           {{#each @lane.topics as |topic|}}
-            <NpnFeedCard
-              @topic={{topic}}
-              @fixedAspect={{this.heroAspect}}
-              @targetWidth={{600}}
-            />
+            <div class="npn-feed-lane__carousel-item">
+              <NpnFeedCard
+                @topic={{topic}}
+                @genre={{topic.npn_pick_genre}}
+                @fixedAspect={{this.heroAspect}}
+                @targetWidth={{400}}
+              />
+            </div>
           {{/each}}
         </div>
 

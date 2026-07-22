@@ -960,12 +960,24 @@
     font-size: var(--font-down-1);
   }
 
-  // Hero: curated covers, uniform shape, largest on the page. First
-  // impression for anyone arriving at the site.
-  &__hero {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  // Carousel: one pick per genre, curated covers at a real size, scrolled
+  // horizontally so nine of them don't shrink to fit one row. Scroll-snap
+  // gives it a deliberate, gallery feel rather than a loose free scroll.
+  &__carousel {
+    display: flex;
     gap: 1em;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 0.25em;
+
+    // Room for the covers' shadow and a comfortable touch target.
+    padding-block-end: 0.5em;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  &__carousel-item {
+    flex: 0 0 clamp(200px, 22vw, 280px);
+    scroll-snap-align: start;
   }
 
   // Justified rows: uniform height, variable width, no cropping, and it
@@ -1055,6 +1067,29 @@
 
   &:hover .npn-feed-card__title {
     color: var(--tertiary);
+  }
+
+  // Positions the genre label over the cover.
+  &__frame {
+    position: relative;
+  }
+
+  // A small label on the pick cover. The row of these across the carousel is
+  // what tells a visitor the range of what the community shoots, so it sits
+  // on the image rather than getting lost in the metadata below.
+  &__genre {
+    position: absolute;
+    inset-block-end: 0.5em;
+    inset-inline-start: 0.5em;
+    padding: 0.1em 0.6em;
+    border-radius: 1em;
+    font-size: var(--font-down-2);
+    font-weight: bold;
+
+    // Legible over any photo, in either colour scheme.
+    background: rgb(0, 0, 0, 0.6);
+    color: #fff;
+    backdrop-filter: blur(2px);
   }
 
   &__meta {
