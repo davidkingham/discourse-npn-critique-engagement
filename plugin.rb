@@ -44,6 +44,8 @@ after_initialize do
   require_relative "lib/discourse_npn_critique_engagement/fair_ranking"
   require_relative "lib/discourse_npn_critique_engagement/topic_query_extension"
   require_relative "lib/discourse_npn_critique_engagement/feed"
+  require_relative "lib/discourse_npn_critique_engagement/discussion_prompt"
+  require_relative "lib/discourse_npn_critique_engagement/reach_metrics"
   require_relative "lib/discourse_npn_critique_engagement/badges"
   require_relative "lib/discourse_npn_critique_engagement/recognition"
   require_relative "lib/discourse_npn_critique_engagement/awarded_critiques"
@@ -69,6 +71,7 @@ after_initialize do
   require_relative "app/controllers/discourse_npn_critique_engagement/admin/outreach_controller"
   require_relative "app/jobs/regular/npn_finalize_editors_pick"
   require_relative "app/jobs/scheduled/npn_critique_scores_refresh"
+  require_relative "app/jobs/scheduled/npn_discussion_prompt"
 
   add_admin_route "npn_critique_engagement.title",
                   "discourse-npn-critique-engagement",

@@ -733,6 +733,30 @@
 }
 
 .npn-admin-report {
+  &__reach {
+    margin-block-end: 1.5em;
+  }
+
+  &__reach-title {
+    margin-block-end: 0.15em;
+  }
+
+  &__reach-description {
+    margin-block-start: 0;
+    color: var(--primary-high);
+    font-size: var(--font-down-1);
+  }
+
+  &__reach-table {
+    // The reach columns are dense numbers; keep them from filling the width.
+    max-width: 46em;
+
+    th {
+      // The header help text lives in the title attribute.
+      cursor: help;
+    }
+  }
+
   &__stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));

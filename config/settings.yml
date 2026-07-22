@@ -312,6 +312,49 @@ plugins:
     type: float
     client: true
 
+  # --- Discussion prompt --------------------------------------------------
+  # A visibility lane keeps discussions in front of people, but it can't fill
+  # an empty room. A weekly question posted into the discussion category
+  # gives members something to answer. The prompts are a bank the job rotates
+  # through, one per week, so nobody has to remember to start the thread.
+
+  npn_discussion_prompt_enabled:
+    default: false
+
+  npn_discussion_prompt_category:
+    default: ""
+    type: category
+
+  # The prompt bank. One question per entry; the job posts the next one each
+  # week and cycles back to the start once it reaches the end.
+  npn_discussion_prompt_questions:
+    default: ""
+    type: list
+    list_type: simple
+
+  # Which weekday the question goes up. The job posts on or after this day
+  # each week, so a missed run is caught up rather than skipped.
+  npn_discussion_prompt_day:
+    default: "monday"
+    type: enum
+    choices:
+      - monday
+      - tuesday
+      - wednesday
+      - thursday
+      - friday
+      - saturday
+      - sunday
+
+  npn_discussion_prompt_pin:
+    default: true
+
+  # The post body. %{question} is the prompt itself (also the title). Leave
+  # blank to use the built-in invitation.
+  npn_discussion_prompt_body:
+    default: ""
+    type: text
+
   npn_critique_new_member_category:
     default: ""
     type: category

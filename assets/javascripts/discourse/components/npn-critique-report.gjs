@@ -51,6 +51,21 @@ function segmentStyle(segment) {
   return trustHTML(`flex-grow: ${segment.count}`);
 }
 
+function percent(part, whole) {
+  if (!whole) {
+    return "—";
+  }
+  return `${Math.round((part / whole) * 100)}%`;
+}
+
+function weekLabel(week) {
+  return new Date(week).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 function median(values) {
   if (values.length === 0) {
     return 0;
@@ -94,6 +109,20 @@ export default class NpnCritiqueReport extends Component {
         label: tierLabel(tier),
       })).filter((segment) => segment.count > 0),
     };
+  }
+
+  // The reach series answers a different question from the roster below:
+  // not "where does each member stand" but "is attention spreading". Reply
+  // counts can rise inside a closed clique; these can't.
+  get reachRows() {
+    return (this.args.reach ?? []).map((row) => ({
+      week: weekLabel(row.week),
+      distinctRepliedTo: row.distinct_replied_to,
+      answered: percent(row.answered_within_48h, row.topics_posted),
+      beyondCore: percent(row.critiques_to_non_core, row.critiques_given),
+      nonCritiqueTopics: row.non_critique_topics,
+      nonCritiqueReplies: row.non_critique_replies,
+    }));
   }
 
   get rows() {
@@ -202,6 +231,73 @@ export default class NpnCritiqueReport extends Component {
           </dd>
         </div>
       </dl>
+
+      {{#if this.reachRows.length}}
+        <section class="npn-admin-report__reach">
+          <h3 class="npn-admin-report__reach-title">
+            {{i18n "npn_critique_engagement.admin.reach.title"}}
+          </h3>
+          <p class="npn-admin-report__reach-description">
+            {{i18n "npn_critique_engagement.admin.reach.description"}}
+          </p>
+          <table class="d-table npn-admin-report__reach-table">
+            <thead class="d-table__header">
+              <tr class="d-table__row">
+                <th class="d-table__cell">
+                  {{i18n "npn_critique_engagement.admin.reach.week"}}
+                </th>
+                <th
+                  class="d-table__cell"
+                  title={{i18n
+                    "npn_critique_engagement.admin.reach.reached_help"
+                  }}
+                >
+                  {{i18n "npn_critique_engagement.admin.reach.reached"}}
+                </th>
+                <th
+                  class="d-table__cell"
+                  title={{i18n
+                    "npn_critique_engagement.admin.reach.answered_help"
+                  }}
+                >
+                  {{i18n "npn_critique_engagement.admin.reach.answered"}}
+                </th>
+                <th
+                  class="d-table__cell"
+                  title={{i18n
+                    "npn_critique_engagement.admin.reach.beyond_core_help"
+                  }}
+                >
+                  {{i18n "npn_critique_engagement.admin.reach.beyond_core"}}
+                </th>
+                <th
+                  class="d-table__cell"
+                  title={{i18n
+                    "npn_critique_engagement.admin.reach.discussions_help"
+                  }}
+                >
+                  {{i18n "npn_critique_engagement.admin.reach.discussions"}}
+                </th>
+              </tr>
+            </thead>
+            <tbody class="d-table__body">
+              {{#each this.reachRows as |row|}}
+                <tr class="d-table__row">
+                  <td class="d-table__cell">{{row.week}}</td>
+                  <td class="d-table__cell">{{row.distinctRepliedTo}}</td>
+                  <td class="d-table__cell">{{row.answered}}</td>
+                  <td class="d-table__cell">{{row.beyondCore}}</td>
+                  <td class="d-table__cell">
+                    {{row.nonCritiqueTopics}}
+                    /
+                    {{row.nonCritiqueReplies}}
+                  </td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </section>
+      {{/if}}
 
       <div class="npn-admin-report__filters">
         <DSelect

@@ -6,6 +6,7 @@ module DiscourseNpnCritiqueEngagement
       requires_plugin DiscourseNpnCritiqueEngagement::PLUGIN_NAME
 
       HEALTH_MONTHS = 12
+      REACH_WEEKS = 12
 
       # GET /admin/plugins/critique-engagement/report?period=YYYY-MM
       # No period: the live rolling standing (trend vs. the latest snapshot).
@@ -43,7 +44,10 @@ module DiscourseNpnCritiqueEngagement
       # median give-and-take ratio — the live window first, then the monthly
       # snapshots.
       def health
-        render json: { months: [current_health] + snapshot_health }
+        render json: {
+                 months: [current_health] + snapshot_health,
+                 reach: ReachMetrics.weekly(weeks: REACH_WEEKS),
+               }
       end
 
       private

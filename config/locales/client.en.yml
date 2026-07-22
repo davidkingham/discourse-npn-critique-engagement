@@ -186,6 +186,18 @@ en:
           median_ratio: "Median give-and-take ratio"
           tier_distribution: "Tier distribution"
           empty: "No history yet — health trends appear once scores have been computed."
+        reach:
+          title: "Reach"
+          description: "Whether attention is spreading, not just how much activity there is. Reply counts can climb while the same members talk to each other; these can't."
+          week: "Week of"
+          reached: "Members reached"
+          reached_help: "Distinct members who received a substantive critique that week."
+          answered: "Answered <48h"
+          answered_help: "Of the photos posted that week, the share that got a first critique within 48 hours."
+          beyond_core: "Beyond the core"
+          beyond_core_help: "Of the critiques given that week, the share that went to someone outside the most-active tenth of members."
+          discussions: "Discussions (topics / replies)"
+          discussions_help: "Topic and reply volume outside the critique category, to see whether discussions are moving."
         outreach:
           nav_label: "Outreach"
           nav_description: "Priority-outreach members with a shared contact log."

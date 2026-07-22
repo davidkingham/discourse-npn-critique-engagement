@@ -1,4 +1,5 @@
 import { service } from "@ember/service";
+import { hash } from "rsvp";
 import { ajax } from "discourse/lib/ajax";
 import DiscourseRoute from "discourse/routes/discourse";
 import { i18n } from "discourse-i18n";
@@ -18,7 +19,14 @@ export default class CritiqueReportRoute extends DiscourseRoute {
   }
 
   model() {
-    return ajax("/admin/plugins/critique-engagement/report");
+    return hash({
+      report: ajax("/admin/plugins/critique-engagement/report"),
+      // The reach series shares the page but its own endpoint; a failure
+      // here shouldn't blank the roster, so it degrades to no reach section.
+      health: ajax("/admin/plugins/critique-engagement/health").catch(
+        () => ({})
+      ),
+    });
   }
 
   titleToken() {

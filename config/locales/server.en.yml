@@ -31,6 +31,12 @@ en:
     npn_fair_feed_freshness_days: "A lane hides anything older than this, and renders nothing at all rather than showing stale content."
     npn_fair_feed_min_aspect: "Narrowest shape an image may be shown in. A taller portrait is letterboxed inside this box rather than cropped."
     npn_fair_feed_max_aspect: "Widest shape an image may be shown in. A wider panorama is letterboxed inside this box rather than cropped."
+    npn_discussion_prompt_enabled: "Post a weekly question into the discussion category, so discussions have something to answer rather than relying on someone remembering to start a thread."
+    npn_discussion_prompt_category: "The category the weekly question is posted into."
+    npn_discussion_prompt_questions: "The question bank. One question per entry; the job posts the next one each week and cycles back to the start once it reaches the end."
+    npn_discussion_prompt_day: "The weekday the question goes up. The job posts on or after this day each week, so a missed run is caught up rather than skipped."
+    npn_discussion_prompt_pin: "Pin the weekly question in its category, unpinning the previous week's."
+    npn_discussion_prompt_body: "The post body. %{question} is the prompt itself (also the title). Leave blank to use the built-in invitation."
     npn_fair_feed_row_height: "Target height in pixels for a justified row. Rows stretch to fill the width from there, so this is a target rather than an exact height."
     npn_fair_feed_max_row_height: "How tall a justified row may grow. Without this, a row that isn't full stretches its images across the whole width and towers over the rows above it."
     npn_fair_waiting_boost_per_day: "How much a topic with no substantive critique climbs the fair ordering for each day it keeps waiting."
@@ -110,6 +116,11 @@ en:
   npn_critique_engagement:
     filter_tips:
       order_fair: "fairly — work still waiting for a first critique, spread across members"
+    discussion_prompt:
+      default_body: |
+        %{question}
+
+        Jump in below — there's no wrong answer, and we'd love to hear how you see it.
     editors_picks:
       already_picked: "This topic is already an editors' pick."
       not_picked: "This topic isn't an editors' pick."
