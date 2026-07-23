@@ -1044,17 +1044,21 @@
   }
 }
 
-// Masonry, for the Latest lane. CSS columns keep each photo at its own aspect
-// ratio — a text topic and a panorama sit at whatever height they need — which
-// reads far cleaner than a uniform grid across mixed ratios.
+// Masonry, for the Latest lane. Real columns (distributed in JS, not CSS
+// `columns`) so each photo keeps its own aspect ratio — a text topic and a
+// panorama sit at whatever height they need — and, crucially, appending a page
+// of infinite scroll never re-flows the items already on screen.
 .npn-feed-masonry {
-  columns: 220px 4;
-  column-gap: 1em;
+  display: flex;
+  align-items: flex-start;
+  gap: 1em;
 
-  &__item {
-    // Keep a card from being split across two columns.
-    break-inside: avoid;
-    margin-block-end: 1em;
+  &__column {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
   }
 }
 
