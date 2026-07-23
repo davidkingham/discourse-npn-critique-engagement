@@ -705,6 +705,18 @@
     font-size: var(--font-down-1);
   }
 
+  &__tagged {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
+
+    .d-icon {
+      color: var(--danger);
+    }
+  }
+
   &__pick,
   &__undo,
   &__remove {

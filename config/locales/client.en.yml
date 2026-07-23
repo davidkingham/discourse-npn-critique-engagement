@@ -144,6 +144,7 @@ en:
         pick_staged: "Pick made — it publishes after the undo window. Undo from the pick queue if needed."
         pick_made: "Editor's Pick made."
         undo: "Undo"
+        tagged_not_picked: "Tag added by hand, not a full pick yet. Use Pick to finish it."
         remove: "Remove pick"
         remove_confirm: "Remove this Editor's Pick? The tag, the public note, and the badge will be removed. If the congratulations message already went out, it can't be unsent."
         pick_modal:

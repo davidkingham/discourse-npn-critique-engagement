@@ -59,7 +59,10 @@ module DiscourseNpnCritiqueEngagement
       topic = Topic.find_by(id: params.require(:topic_id))
       raise Discourse::NotFound if topic.nil? || !category_ids.include?(topic.category_id)
 
-      if EditorsPick.picked?(topic) || PendingPick.exists?(topic_id: topic.id)
+      # A bare tag doesn't block picking — that's the whole point of the fix:
+      # a moderator who tagged by hand clicks Pick to complete the process.
+      # Only a finalized pick (note) or a staged one blocks it.
+      if EditorsPick.finalized?(topic) || PendingPick.exists?(topic_id: topic.id)
         return(
           render_json_error(
             I18n.t("npn_critique_engagement.editors_picks.already_picked"),
@@ -142,7 +145,10 @@ module DiscourseNpnCritiqueEngagement
         return render json: { picked: false }
       end
 
-      if EditorsPick.picked?(topic)
+      # Removes a finalized pick, a stray hand-added tag, or a note whose tag
+      # was hand-removed — remove! cleans up whichever of the tag/note/badge
+      # actually exist.
+      if EditorsPick.picked?(topic) || EditorsPick.finalized?(topic)
         EditorsPick.remove!(topic: topic, moderator: current_user)
         return render json: { picked: false }
       end
@@ -258,7 +264,11 @@ module DiscourseNpnCritiqueEngagement
               finalize_at: pending.finalize_at,
               genre: pending.genre,
             },
-        picked: topic.tags.map(&:name).include?(pick_tag),
+        # Finalized (the note exists) vs merely carrying the tag a moderator
+        # added by hand. A bare tag shows as "tagged, not picked" with the
+        # Pick button still offered, so a forgotten step can be completed.
+        picked: pick_note.present?,
+        tagged: topic.tags.map(&:name).include?(pick_tag) && pick_note.nil? && pending.nil?,
         picked_by:
           pick_note &&
             {

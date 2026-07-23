@@ -95,10 +95,14 @@ export default class NpnEditorsPicks extends Component {
         defaultGenre,
         onPicked: (result) => {
           if (result.pending) {
-            this.updateTopic(topic.id, { pending: result.pending });
+            this.updateTopic(topic.id, {
+              pending: result.pending,
+              tagged: false,
+            });
           } else {
             this.updateTopic(topic.id, {
               picked: true,
+              tagged: false,
               picked_by: result.picked_by,
             });
           }
@@ -130,7 +134,11 @@ export default class NpnEditorsPicks extends Component {
             type: "POST",
             data: { topic_id: topic.id },
           });
-          this.updateTopic(topic.id, { picked: false, picked_by: null });
+          this.updateTopic(topic.id, {
+            picked: false,
+            tagged: false,
+            picked_by: null,
+          });
         } catch (error) {
           popupAjaxError(error);
         }
@@ -300,6 +308,14 @@ export default class NpnEditorsPicks extends Component {
                     class="btn-flat btn-small npn-editors-picks__remove"
                   />
                 {{else}}
+                  {{#if topic.tagged}}
+                    <div class="npn-editors-picks__tagged">
+                      {{dIcon "triangle-exclamation"}}
+                      {{i18n
+                        "npn_critique_engagement.editors_picks.tagged_not_picked"
+                      }}
+                    </div>
+                  {{/if}}
                   <DButton
                     @action={{fn this.pick topic}}
                     @icon="star"
