@@ -159,6 +159,22 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       expect(ids).not_to include(old_topic.id)
       expect(ids).not_to include(elsewhere.id)
     end
+
+    it "counts each poster's editors' picks from the last 12 months" do
+      pick_tag = Fabricate(:tag, name: DiscourseNpnCritiqueEngagement::GenreTags.pick_tag)
+      recent_pick = make_image_topic(engaged_poster, pick_tag)
+      old_pick = make_image_topic(engaged_poster, pick_tag)
+      # The pick tag's application time is when the pick was made, so backdate
+      # topic_tags rather than the topics.
+      TopicTag.where(topic_id: recent_pick.id).update_all(created_at: 2.months.ago)
+      TopicTag.where(topic_id: old_pick.id).update_all(created_at: 13.months.ago)
+
+      get "/moderate/editors-picks.json"
+
+      topics = response.parsed_body["topics"].index_by { |topic| topic["id"] }
+      expect(topics[engaged_topic.id]["recent_picks"]).to eq(1)
+      expect(topics[quiet_topic.id]["recent_picks"]).to eq(0)
+    end
   end
 
   describe "#pick" do

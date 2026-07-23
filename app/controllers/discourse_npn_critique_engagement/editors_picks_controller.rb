@@ -229,7 +229,7 @@ module DiscourseNpnCritiqueEngagement
         end
     end
 
-    def topic_payload(topic, score, pick_note, note_genres = {}, pendings = {})
+    def topic_payload(topic, score, pick_note, note_genres = {}, pendings = {}, recent_picks = 0)
       pending = pendings[topic.id]
       {
         id: topic.id,
@@ -240,6 +240,7 @@ module DiscourseNpnCritiqueEngagement
         username: topic.user&.username,
         name: topic.user&.name,
         avatar_template: topic.user&.avatar_template,
+        recent_picks: recent_picks,
         score:
           score &&
             {

@@ -237,6 +237,19 @@ export default class NpnEditorsPicks extends Component {
                   {{dFormatDate topic.created_at format="tiny"}}
                 </div>
 
+                <div
+                  class="npn-editors-picks__picks-history"
+                  title={{i18n
+                    "npn_critique_engagement.editors_picks.recent_picks_hint"
+                  }}
+                >
+                  {{dIcon "star"}}
+                  {{i18n
+                    "npn_critique_engagement.editors_picks.recent_picks"
+                    count=topic.recent_picks
+                  }}
+                </div>
+
                 {{#if topic.pending}}
                   <div class="npn-editors-picks__picked --pending">
                     {{dIcon "star"}}
