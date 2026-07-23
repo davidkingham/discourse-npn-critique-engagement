@@ -251,6 +251,14 @@ plugins:
     default: ""
     allow_any: false
 
+  # Core lets a member's own "Default Home Page" preference win over any custom
+  # homepage, so members who once picked a homepage never see the feed. With
+  # this on, the feed takes precedence over that preference for its audience —
+  # the way to actually roll it out to existing members. Turn it off to respect
+  # each member's chosen homepage instead.
+  npn_fair_feed_override_homepage_preference:
+    default: true
+
   # One pick per genre, so this caps how many genres the carousel shows. The
   # carousel scrolls, so a value at or above the genre count shows them all.
   npn_fair_feed_picks_limit:

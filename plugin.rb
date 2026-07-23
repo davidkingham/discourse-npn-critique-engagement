@@ -46,6 +46,7 @@ after_initialize do
   require_relative "lib/discourse_npn_critique_engagement/fair_ranking"
   require_relative "lib/discourse_npn_critique_engagement/topic_query_extension"
   require_relative "lib/discourse_npn_critique_engagement/feed"
+  require_relative "lib/discourse_npn_critique_engagement/current_homepage_override"
   require_relative "lib/discourse_npn_critique_engagement/discussion_prompt"
   require_relative "lib/discourse_npn_critique_engagement/reach_metrics"
   require_relative "lib/discourse_npn_critique_engagement/badges"
@@ -186,7 +187,14 @@ after_initialize do
     options
   end
 
-  reloadable_patch { TopicQuery.prepend(DiscourseNpnCritiqueEngagement::TopicQueryExtension) }
+  reloadable_patch do
+    TopicQuery.prepend(DiscourseNpnCritiqueEngagement::TopicQueryExtension)
+    # Both the controller (crawler/SEO checks) and the helper (the homepage
+    # meta tag the client routes on) define #current_homepage; override both so
+    # the feed can outrank a member's homepage preference.
+    ApplicationController.prepend(DiscourseNpnCritiqueEngagement::CurrentHomepageOverride)
+    ApplicationHelper.prepend(DiscourseNpnCritiqueEngagement::CurrentHomepageOverride)
+  end
 
   # Take over "/" for the composed homepage. Logged-in members only unless
   # the setting says otherwise: anonymous visitors keep Latest, which is the

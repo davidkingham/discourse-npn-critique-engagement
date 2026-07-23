@@ -336,6 +336,40 @@ describe DiscourseNpnCritiqueEngagement::FairFeedController do
     end
   end
 
+  # Core lets a member's own homepage preference win over any custom homepage,
+  # so the feed has to override that preference to reach members who once chose
+  # a homepage. The meta tag is what the client routes on.
+  describe "overriding a member's homepage preference" do
+    fab!(:member) { Fabricate(:user, created_at: 6.months.ago) }
+
+    before do
+      # The member has chosen Latest as their homepage.
+      member.user_option.update!(homepage_id: UserOption::HOMEPAGES.key("latest"))
+      sign_in(member)
+    end
+
+    def homepage_meta
+      get "/latest"
+      response.body[/discourse_current_homepage"\s+content="([^"]*)"/, 1]
+    end
+
+    it "shows the feed despite the member's homepage preference" do
+      expect(homepage_meta).to eq("custom")
+    end
+
+    it "respects the preference when the override is turned off" do
+      SiteSetting.npn_fair_feed_override_homepage_preference = false
+
+      expect(homepage_meta).to eq("latest")
+    end
+
+    it "respects the preference for a member outside the audience" do
+      SiteSetting.npn_fair_feed_allowed_groups = Fabricate(:group).id.to_s
+
+      expect(homepage_meta).to eq("latest")
+    end
+  end
+
   describe "restricted to a beta group" do
     fab!(:beta, :group)
     fab!(:tester) { Fabricate(:user, created_at: 6.months.ago) }
