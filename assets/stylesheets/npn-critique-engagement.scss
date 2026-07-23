@@ -984,26 +984,6 @@
     font-size: var(--font-down-1);
   }
 
-  // Carousel: one pick per genre, curated covers at a real size, scrolled
-  // horizontally so nine of them don't shrink to fit one row. Scroll-snap
-  // gives it a deliberate, gallery feel rather than a loose free scroll.
-  &__carousel {
-    display: flex;
-    gap: 1em;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 0.25em;
-
-    // Room for the covers' shadow and a comfortable touch target.
-    padding-block-end: 0.5em;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  &__carousel-item {
-    flex: 0 0 clamp(200px, 22vw, 280px);
-    scroll-snap-align: start;
-  }
-
   // Justified rows: uniform height, variable width, no cropping, and it
   // reads left to right so the fairness ranking stays legible. Masonry is
   // column-major and would scramble that order.
@@ -1041,6 +1021,101 @@
     padding: 0;
     display: flex;
     flex-direction: column;
+  }
+}
+
+// The editors' picks carousel. One pick per genre, scrolled horizontally so
+// nine covers don't shrink to fit one row. Its scrollability is signalled by a
+// soft fade at each edge that has more beyond it, plus arrows on hover — no
+// scrollbar.
+.npn-feed-carousel {
+  position: relative;
+
+  &__track {
+    display: flex;
+    gap: 1em;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 0.25em;
+
+    // Room for the covers' shadow and a comfortable touch target.
+    padding-block-end: 0.5em;
+    -webkit-overflow-scrolling: touch;
+
+    // We provide our own edge affordance, so hide the native scrollbar.
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  &__item {
+    flex: 0 0 clamp(200px, 22vw, 280px);
+    scroll-snap-align: start;
+  }
+
+  // Soft gradient over the edge that has more content beyond it.
+  &__fade {
+    position: absolute;
+    inset-block: 0;
+    inline-size: 3em;
+    z-index: 1;
+    pointer-events: none;
+
+    &.--left {
+      inset-inline-start: 0;
+      background: linear-gradient(to right, var(--secondary), transparent);
+    }
+
+    &.--right {
+      inset-inline-end: 0;
+      background: linear-gradient(to left, var(--secondary), transparent);
+    }
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  &__arrow {
+    position: absolute;
+    inset-block-start: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 2.2em;
+    block-size: 2.2em;
+    padding: 0;
+    border: 1px solid var(--primary-low);
+    border-radius: 50%;
+    background: var(--secondary);
+    color: var(--primary);
+    cursor: pointer;
+    box-shadow: 0 1px 5px rgb(0, 0, 0, 0.18);
+
+    // Revealed on hover of the carousel; a coarse pointer (touch) has no hover,
+    // so the fades carry the signal there.
+    opacity: 0;
+    transition: opacity 0.15s ease;
+
+    &.--left {
+      inset-inline-start: 0.25em;
+    }
+
+    &.--right {
+      inset-inline-end: 0.25em;
+    }
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  &:hover &__arrow:not([hidden]) {
+    opacity: 1;
   }
 }
 

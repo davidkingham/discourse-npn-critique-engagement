@@ -25,6 +25,8 @@ register_svg_icon "star"
 register_svg_icon "image"
 register_svg_icon "arrow-rotate-left"
 register_svg_icon "xmark"
+register_svg_icon "chevron-left"
+register_svg_icon "chevron-right"
 
 module ::DiscourseNpnCritiqueEngagement
   PLUGIN_NAME = "discourse-npn-critique-engagement"

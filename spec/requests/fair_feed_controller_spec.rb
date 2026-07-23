@@ -77,14 +77,23 @@ describe DiscourseNpnCritiqueEngagement::FairFeedController do
     end
 
     describe "the editors' picks carousel" do
-      it "shows one pick per genre, most recent genre first, each labeled" do
-        make_pick("birds", created_at: 3.hours.ago)
+      it "shows one pick per genre, in the configured genre order, each labeled" do
+        # Picked in one order; the carousel presents them in the configured
+        # (alphabetical) order regardless.
         make_pick("landscape", created_at: 1.hour.ago)
+        make_pick("birds", created_at: 3.hours.ago)
 
         get "/critique-engagement/feed.json"
 
-        genres = pick_topics.map { |topic| topic["npn_pick_genre"] }
-        expect(genres).to eq(%w[landscape birds])
+        expect(pick_topics.map { |topic| topic["npn_pick_genre"] }).to eq(%w[birds landscape])
+      end
+
+      it "shows the configured display label, not the raw slug" do
+        make_pick("macro-close-up")
+
+        get "/critique-engagement/feed.json"
+
+        expect(pick_topics.first["npn_pick_genre_label"]).to eq("Macro/Close-up")
       end
 
       it "collapses several picks in one genre down to the most recent" do

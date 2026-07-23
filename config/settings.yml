@@ -258,6 +258,15 @@ plugins:
     min: 1
     max: 24
 
+  # The genres the picks carousel shows, in display order, as
+  # `slug:Label` pairs — slug is the pick's genre tag, Label is what the card
+  # shows. The order here is the order of the carousel. Genres not listed fall
+  # to the end, most-recently-picked first.
+  npn_fair_feed_pick_genres:
+    type: list
+    list_type: simple
+    default: "abstract:Abstract|astro:Astro|birds:Birds|landscape:Landscape|macro-close-up:Macro/Close-up|non-nature:Non-Nature|plant-life:Plant Life|weekly-challenge:Weekly Challenge|wildlife:Wildlife"
+
   # Deliberately small. The waiting lane is a call to action, not the page —
   # capping it is what keeps a weak photo from shaping a visitor's first
   # impression of the community.

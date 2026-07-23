@@ -52,8 +52,11 @@ module DiscourseNpnCritiqueEngagement
     # labels each pick card with it.
     def attach_pick_genres(payload, genres)
       payload[:topic_list][:topics].each do |topic|
-        genre = genres[topic[:id]]
-        topic[:npn_pick_genre] = genre if genre.present?
+        slug = genres[topic[:id]]
+        next if slug.blank?
+
+        topic[:npn_pick_genre] = slug
+        topic[:npn_pick_genre_label] = Feed.pick_genre_label(slug)
       end
     end
   end

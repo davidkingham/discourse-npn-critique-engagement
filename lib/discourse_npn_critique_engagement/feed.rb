@@ -98,11 +98,12 @@ module DiscourseNpnCritiqueEngagement
       lane("npn_picks", "carousel", list, genres: genres)
     end
 
-    # The latest pick in each genre, newest pick first, capped. A pick is a
-    # topic carrying the pick tag (so manually-tagged picks still count); its
-    # genre is the one the moderator declared on the pick note or the staged
-    # pick, falling back to the topic's own first genre tag for legacy picks
-    # that predate genre recording.
+    # The latest pick in each genre, capped, then ordered by the configured
+    # genre order (npn_fair_feed_pick_genres). A pick is a topic carrying the
+    # pick tag (so manually-tagged picks still count); its genre is the one the
+    # moderator declared on the pick note or the staged pick, falling back to
+    # the topic's own first genre tag for legacy picks that predate genre
+    # recording.
     def latest_pick_per_genre
       candidates = tagged_pick_topics
       return [] if candidates.blank?
@@ -123,7 +124,49 @@ module DiscourseNpnCritiqueEngagement
         chosen << { topic_id: topic.id, genre: genre }
         break if chosen.size >= limit
       end
+
+      order_by_configured_genres(chosen)
+    end
+
+    # Sort the chosen picks into the configured genre order. Genres not in the
+    # config keep their relative (recency) order and sit after the configured
+    # ones — the second sort key preserves that, since Ruby's sort_by is not
+    # stable on its own.
+    def order_by_configured_genres(chosen)
+      position = pick_genre_order.each_with_index.to_h
       chosen
+        .each_with_index
+        .sort_by { |pick, i| [position.fetch(pick[:genre], Float::INFINITY), i] }
+        .map(&:first)
+    end
+
+    # [{slug:, label:}] parsed from the setting, in display order.
+    def pick_genre_config
+      SiteSetting
+        .npn_fair_feed_pick_genres
+        .to_s
+        .split("|")
+        .filter_map do |entry|
+          slug, label = entry.split(":", 2)
+          next if slug.blank?
+
+          { slug: slug.strip, label: (label.presence || slug).strip }
+        end
+    end
+
+    def pick_genre_order
+      pick_genre_config.map { |genre| genre[:slug] }
+    end
+
+    # {slug => display label} for the configured genres.
+    def pick_genre_labels
+      pick_genre_config.to_h { |genre| [genre[:slug], genre[:label]] }
+    end
+
+    # The label a card shows for a genre: the configured one, or a humanized
+    # fallback for a genre nobody configured.
+    def pick_genre_label(slug)
+      pick_genre_labels[slug] || slug.to_s.tr("-", " ").capitalize
     end
 
     # Pick topics in the critique tree, fresh and visible, newest first. The

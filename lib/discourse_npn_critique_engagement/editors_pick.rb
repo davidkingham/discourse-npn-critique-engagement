@@ -74,6 +74,30 @@ module DiscourseNpnCritiqueEngagement
       Post.where(topic_id: topic.id, action_code: ACTION_CODE, deleted_at: nil)
     end
 
+    # {user_id => count} — how many of each member's topics are editors'
+    # picks made in the trailing window (default 12 months). Moderators use
+    # recent pick frequency as a selection signal on the review page, so it
+    # rides along with each candidate. Counted by when the pick tag was
+    # applied (topic_tags.created_at), which is when the pick was made;
+    # unpicking removes the tag, so removed picks drop out on their own.
+    def pick_counts_for_users(user_ids, since: 12.months.ago)
+      return {} if user_ids.blank?
+
+      DB
+        .query(<<~SQL, user_ids: user_ids, pick_tag: GenreTags.pick_tag, since: since)
+          SELECT t.user_id, COUNT(DISTINCT t.id) AS picks
+          FROM topics t
+          JOIN topic_tags tt ON tt.topic_id = t.id
+          JOIN tags ON tags.id = tt.tag_id
+          WHERE t.user_id IN (:user_ids)
+            AND t.deleted_at IS NULL
+            AND tags.name = :pick_tag
+            AND tt.created_at >= :since
+          GROUP BY t.user_id
+        SQL
+        .to_h { |row| [row.user_id, row.picks] }
+    end
+
     private
 
     # The badge honors the photographer, not just the post — granted by the

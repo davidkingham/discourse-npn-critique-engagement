@@ -211,10 +211,18 @@ module DiscourseNpnCritiqueEngagement
           .pluck(:post_id, :value)
           .to_h
       pendings = PendingPick.for_topics(topics.map(&:id))
+      recent_picks = EditorsPick.pick_counts_for_users(topics.map(&:user_id).uniq)
 
       topics
         .map do |topic|
-          topic_payload(topic, scores[topic.user_id], pick_notes[topic.id], note_genres, pendings)
+          topic_payload(
+            topic,
+            scores[topic.user_id],
+            pick_notes[topic.id],
+            note_genres,
+            pendings,
+            recent_picks[topic.user_id].to_i,
+          )
         end
         .sort_by do |payload|
           [payload[:score] ? -payload[:score][:score] : Float::INFINITY, payload[:created_at]]

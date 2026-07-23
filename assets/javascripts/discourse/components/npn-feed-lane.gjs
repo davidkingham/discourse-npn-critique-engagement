@@ -8,25 +8,23 @@ import dCategoryLink from "discourse/ui-kit/helpers/d-category-link";
 import dDirSpan from "discourse/ui-kit/helpers/d-dir-span";
 import { i18n } from "discourse-i18n";
 import NpnFeedCard from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-feed-card";
+import NpnFeedCarousel from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-feed-carousel";
 import NpnFeedMasonry from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-feed-masonry";
 import {
   aspectFor,
   clampAspect,
 } from "discourse/plugins/discourse-npn-critique-engagement/discourse/lib/feed-thumbnail";
 
-// Editors' picks are covers, so a fixed shape is right and cropping is
-// acceptable. This is the only place in the feed that crops.
-const HERO_ASPECT = 3 / 2;
-
 // One lane, rendered in the layout its job calls for.
 //
-//   hero       cropped covers, largest — the shop window
+//   carousel   editors' picks, one per genre, in a horizontally scrolling row
 //   justified  uniform height, variable width, never cropped, reads left to
 //              right so the fairness ranking stays legible. Masonry cannot
 //              do that: it is column-major, so it scrambles rank.
 //   cards      a small uniform grid
 //   rows       text only — a discussion has no photo, and rendering it in a
 //              photo grid as an empty box is why discussions get scrolled past
+//   masonry    the Latest lane — columns at natural aspect, infinite scroll
 export default class NpnFeedLane extends Component {
   @service siteSettings;
 
@@ -60,10 +58,6 @@ export default class NpnFeedLane extends Component {
     );
   }
 
-  get heroAspect() {
-    return HERO_ASPECT;
-  }
-
   <template>
     <section
       class="npn-feed-lane npn-feed-lane--{{@lane.layout}}"
@@ -75,20 +69,7 @@ export default class NpnFeedLane extends Component {
       </header>
 
       {{#if (eq @lane.layout "carousel")}}
-        {{! one pick per genre; a horizontal scroll keeps each cover at a real
-        size instead of shrinking nine covers to fit one row }}
-        <div class="npn-feed-lane__carousel">
-          {{#each @lane.topics as |topic|}}
-            <div class="npn-feed-lane__carousel-item">
-              <NpnFeedCard
-                @topic={{topic}}
-                @genre={{topic.npn_pick_genre}}
-                @fixedAspect={{this.heroAspect}}
-                @targetWidth={{400}}
-              />
-            </div>
-          {{/each}}
-        </div>
+        <NpnFeedCarousel @topics={{@lane.topics}} />
 
       {{else if (eq @lane.layout "justified")}}
         <div class="npn-feed-lane__justified">
