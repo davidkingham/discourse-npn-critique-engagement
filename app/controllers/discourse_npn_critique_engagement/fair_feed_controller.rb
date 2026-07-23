@@ -32,6 +32,18 @@ module DiscourseNpnCritiqueEngagement
       render_json_dump(lanes: lanes)
     end
 
+    # One more page of the Latest lane, for its infinite scroll. Same gate and
+    # same serialization as a lane in #index, so the client appends it exactly
+    # as it rendered the first page.
+    def latest
+      raise Discourse::NotFound unless Feed.visible_to?(current_user)
+
+      list = Feed.latest(current_user, page: params[:page].to_i)
+      return render_json_dump(topic_list: { topics: [] }) if list.nil?
+
+      render_json_dump(serialize_data(list, TopicListSerializer))
+    end
+
     private
 
     # The declared genre is per-pick, not a topic attribute, so it rides

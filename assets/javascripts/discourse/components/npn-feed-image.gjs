@@ -29,6 +29,13 @@ export default class NpnFeedImage extends Component {
       return this.args.fixedAspect;
     }
 
+    // Masonry gives each image its own column height, so it shows at its true
+    // aspect ratio with no clamp and no letterbox — the whole reason masonry
+    // suits the Latest lane where the uniform grid looked sloppy.
+    if (this.args.natural) {
+      return this.actualAspect;
+    }
+
     return clampAspect(
       this.actualAspect,
       this.siteSettings.npn_fair_feed_min_aspect,
@@ -37,10 +44,13 @@ export default class NpnFeedImage extends Component {
   }
 
   // The box was clamped away from the photo's true shape, so `contain` will
-  // leave bars. Only then do we need the blurred fill behind it.
+  // leave bars. Only then do we need the blurred fill behind it. A natural or
+  // fixed box matches the image exactly, so it never letterboxes.
   get needsFill() {
     return (
-      !this.args.fixedAspect && Math.abs(this.actualAspect - this.aspect) > 0.01
+      !this.args.fixedAspect &&
+      !this.args.natural &&
+      Math.abs(this.actualAspect - this.aspect) > 0.01
     );
   }
 

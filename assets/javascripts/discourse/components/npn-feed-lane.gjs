@@ -8,6 +8,7 @@ import dCategoryLink from "discourse/ui-kit/helpers/d-category-link";
 import dDirSpan from "discourse/ui-kit/helpers/d-dir-span";
 import { i18n } from "discourse-i18n";
 import NpnFeedCard from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-feed-card";
+import NpnFeedMasonry from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-feed-masonry";
 import {
   aspectFor,
   clampAspect,
@@ -100,6 +101,9 @@ export default class NpnFeedLane extends Component {
             </div>
           {{/each}}
         </div>
+
+      {{else if (eq @lane.layout "masonry")}}
+        <NpnFeedMasonry @lane={{@lane}} />
 
       {{else if (eq @lane.layout "cards")}}
         <div class="npn-feed-lane__cards">

@@ -29,6 +29,7 @@ const NpnFeedCard = <template>
         <NpnFeedImage
           @topic={{@topic}}
           @fixedAspect={{@fixedAspect}}
+          @natural={{@natural}}
           @targetWidth={{@targetWidth}}
         />
         {{#if @genre}}

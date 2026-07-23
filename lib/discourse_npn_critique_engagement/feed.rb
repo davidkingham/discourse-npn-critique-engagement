@@ -61,7 +61,7 @@ module DiscourseNpnCritiqueEngagement
         lane("npn_new_members", "cards", new_members(user, seen)),
         lane("npn_conversation", "rows", conversation(user, seen)),
         lane("npn_unmet", "justified", unmet(user, seen)),
-        lane("npn_latest", "cards", latest(user, seen)),
+        lane("npn_latest", "masonry", latest(user)),
       ].compact
     end
 
@@ -249,13 +249,24 @@ module DiscourseNpnCritiqueEngagement
       end
     end
 
-    # The familiar feed, below the curated lanes: everything recently active
-    # that the lanes above didn't already surface, newest first. Its own
-    # limit, and — through `seen` — no repeats of anything shown above.
-    def latest(user, seen)
-      build(user, "npn_latest", SiteSetting.npn_fair_feed_latest_limit, seen) do |scope|
-        scope.reorder("topics.bumped_at DESC, topics.id DESC")
-      end
+    # The familiar feed that closes the page: the real Latest list, paginated
+    # for infinite scroll and rendered as masonry — the old Latest page, in
+    # other words. It is deliberately NOT deduped against the curated lanes:
+    # this is the "browse everything" surface, so a photo already up in a
+    # curated lane still appears here, exactly as Latest always has. Core's
+    # own list_latest handles security, muting, ordering and pagination, so
+    # the earlier categories-join pitfall does not apply here.
+    def latest(user, page: 0)
+      list =
+        TopicQuery.new(
+          user,
+          page: [page.to_i, 0].max,
+          per_page: SiteSetting.npn_fair_feed_latest_limit,
+        ).list_latest
+      list.topics.present? ? list : nil
+    rescue StandardError => e
+      Rails.logger.warn("NPN fair feed: latest lane failed: #{e.class}: #{e.message}")
+      nil
     end
 
     # Each lane gets its own TopicQuery so per_page applies per lane. Excludes

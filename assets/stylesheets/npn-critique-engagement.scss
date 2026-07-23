@@ -1044,6 +1044,20 @@
   }
 }
 
+// Masonry, for the Latest lane. CSS columns keep each photo at its own aspect
+// ratio — a text topic and a panorama sit at whatever height they need — which
+// reads far cleaner than a uniform grid across mixed ratios.
+.npn-feed-masonry {
+  columns: 220px 4;
+  column-gap: 1em;
+
+  &__item {
+    // Keep a card from being split across two columns.
+    break-inside: avoid;
+    margin-block-end: 1em;
+  }
+}
+
 .npn-feed-image {
   position: relative;
   width: 100%;

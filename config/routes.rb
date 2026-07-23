@@ -5,8 +5,10 @@ DiscourseNpnCritiqueEngagement::Engine.routes.draw do
   get "/critique-engagement/hall-of-fame" => "leaderboards#hall_of_fame"
   get "/critique-engagement/impact" => "impact#show"
 
-  # Every homepage lane in one request.
+  # Every homepage lane in one request; /feed/latest paginates the closing
+  # Latest lane for its infinite scroll.
   get "/critique-engagement/feed" => "fair_feed#index"
+  get "/critique-engagement/feed/latest" => "fair_feed#latest"
 
   # Moderator tools live under /moderate — the dashboard at the root, the
   # work surfaces beneath it.

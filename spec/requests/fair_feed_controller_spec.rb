@@ -190,18 +190,38 @@ describe DiscourseNpnCritiqueEngagement::FairFeedController do
       expect(waiting & unmet).to be_empty
     end
 
-    it "closes with a Latest lane holding what the curated lanes didn't" do
-      SiteSetting.npn_fair_feed_conversation_limit = 1
-      3.times { make_topic(discussion_category, Fabricate(:user, created_at: 6.months.ago)) }
+    it "closes with a masonry Latest lane of the real latest topics" do
+      make_topic(discussion_category)
 
       get "/critique-engagement/feed.json"
 
-      expect(lanes.map { |entry| entry["name"] }).to include("npn_latest")
-      conversation = topic_ids("npn_conversation")
-      latest = topic_ids("npn_latest")
-      expect(conversation.size).to eq(1)
+      latest = lanes.find { |entry| entry["name"] == "npn_latest" }
       expect(latest).to be_present
-      expect(conversation & latest).to be_empty
+      expect(latest["layout"]).to eq("masonry")
+      expect(latest["topic_list"]["topics"]).to be_present
+    end
+
+    it "paginates the Latest lane for infinite scroll" do
+      SiteSetting.npn_fair_feed_latest_limit = 2
+      5.times { |i| make_topic(discussion_category, regular, created_at: (i + 1).minutes.ago) }
+
+      get "/critique-engagement/feed/latest.json", params: { page: 0 }
+      first = response.parsed_body["topic_list"]["topics"].map { |topic| topic["id"] }
+
+      get "/critique-engagement/feed/latest.json", params: { page: 1 }
+      second = response.parsed_body["topic_list"]["topics"].map { |topic| topic["id"] }
+
+      expect(first.size).to eq(2)
+      expect(second.size).to eq(2)
+      expect(first & second).to be_empty
+    end
+
+    it "404s the Latest pagination endpoint for anyone outside the feed's audience" do
+      SiteSetting.npn_fair_feed_allowed_groups = Fabricate(:group).id.to_s
+
+      get "/critique-engagement/feed/latest.json", params: { page: 1 }
+
+      expect(response.status).to eq(404)
     end
 
     it "keeps the auto-generated category description topics out" do
