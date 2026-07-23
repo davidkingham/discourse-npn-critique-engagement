@@ -13,7 +13,11 @@ module DiscourseNpnCritiqueEngagement
     GENRE_FIELD = "npn_editors_pick_genre"
 
     def finalize!(topic:, moderator:, genre: nil, reason: nil)
-      return if topic.nil? || moderator.nil? || picked?(topic)
+      # Guard on the note, not the tag: a moderator who added the tag by hand
+      # has a tagged-but-not-picked topic, and finalizing it is exactly how
+      # they fix that. Re-tagging below is a harmless no-op when the tag is
+      # already there.
+      return if topic.nil? || moderator.nil? || finalized?(topic)
 
       DiscourseTagging.tag_topic_by_names(
         topic,
@@ -68,6 +72,15 @@ module DiscourseNpnCritiqueEngagement
 
     def picked?(topic)
       topic.tags.map(&:name).include?(GenreTags.pick_tag)
+    end
+
+    # A finalized pick carries the moderator note — the record the full
+    # process creates (note, badge, PM). The tag alone doesn't make a pick:
+    # a moderator can add it by hand, and that reads as "tagged, not picked"
+    # until finalized. This is what "already picked" means for the review
+    # queue, matching how the dashboard counts picks by their notes.
+    def finalized?(topic)
+      notes(topic).exists?
     end
 
     def notes(topic)

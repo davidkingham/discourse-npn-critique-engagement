@@ -175,6 +175,18 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       expect(topics[engaged_topic.id]["recent_picks"]).to eq(1)
       expect(topics[quiet_topic.id]["recent_picks"]).to eq(0)
     end
+
+    it "shows a hand-added pick tag as tagged, not picked" do
+      pick_tag = Fabricate(:tag, name: DiscourseNpnCritiqueEngagement::GenreTags.pick_tag)
+      engaged_topic.tags << pick_tag
+
+      get "/moderate/editors-picks.json"
+
+      entry = response.parsed_body["topics"].find { |topic| topic["id"] == engaged_topic.id }
+      expect(entry["tagged"]).to eq(true)
+      expect(entry["picked"]).to eq(false)
+      expect(entry["picked_by"]).to be_nil
+    end
   end
 
   describe "#pick" do
@@ -271,6 +283,26 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id }
 
       expect(response.status).to eq(422)
+    end
+
+    it "completes a hand-added tag into a full pick rather than rejecting it" do
+      pick_tag = Fabricate(:tag, name: DiscourseNpnCritiqueEngagement::GenreTags.pick_tag)
+      topic.tags << pick_tag
+
+      post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id }
+
+      expect(response.status).to eq(200)
+      expect(topic.reload.tags.map(&:name)).to include("editors-pick")
+      note = topic.posts.order(:created_at).last
+      expect(note.action_code).to eq("npn_editors_pick")
+
+      badge = Badge.find_by(name: SiteSetting.npn_critique_editors_pick_badge_name)
+      expect(UserBadge.find_by(badge: badge, user: engaged_poster)).to be_present
+
+      get "/moderate/editors-picks.json"
+      entry = response.parsed_body["topics"].find { |payload| payload["id"] == topic.id }
+      expect(entry["picked"]).to eq(true)
+      expect(entry["tagged"]).to eq(false)
     end
 
     it "rejects topics outside the critique category" do
@@ -430,6 +462,16 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       post "/moderate/editors-picks/unpick.json", params: { topic_id: topic.id }
 
       expect(response.status).to eq(422)
+    end
+
+    it "removes a hand-added tag that never became a full pick" do
+      pick_tag = Fabricate(:tag, name: DiscourseNpnCritiqueEngagement::GenreTags.pick_tag)
+      topic.tags << pick_tag
+
+      post "/moderate/editors-picks/unpick.json", params: { topic_id: topic.id }
+
+      expect(response.status).to eq(200)
+      expect(topic.reload.tags.map(&:name)).not_to include("editors-pick")
     end
   end
 end
