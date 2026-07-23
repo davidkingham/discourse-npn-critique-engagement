@@ -156,6 +156,11 @@ en:
           submit: "Make the pick"
         no_standing: "No recent standing"
         posted: "Posted"
+        recent_picks:
+          zero: "No picks in the last 12 months"
+          one: "%{count} pick in the last 12 months"
+          other: "%{count} picks in the last 12 months"
+        recent_picks_hint: "How many of this poster's images became Editors' Picks in the last 12 months. Counted when each pick was made."
       admin:
         report:
           nav_label: "Report"

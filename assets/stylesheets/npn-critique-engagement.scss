@@ -673,6 +673,20 @@
     color: var(--primary-high);
   }
 
+  &__picks-history {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    font-size: var(--font-down-1);
+    font-weight: bold;
+    color: var(--primary-high);
+    cursor: help;
+
+    .d-icon {
+      color: var(--tertiary);
+    }
+  }
+
   &__picked {
     display: inline-flex;
     flex-wrap: wrap;
