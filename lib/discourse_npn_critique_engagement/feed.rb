@@ -243,14 +243,9 @@ module DiscourseNpnCritiqueEngagement
     # Each lane gets its own TopicQuery so per_page applies per lane. Returns
     # nil rather than an empty list so the caller can drop the lane outright.
     def build(user, name, limit, &narrow)
-      # no_definitions keeps the auto-generated "About the … category" topics
-      # out. They carry no image and nobody is waiting for a critique on one.
-      list =
-        TopicQuery.new(
-          user,
-          per_page: limit.to_i,
-          no_definitions: !SiteSetting.show_category_definitions_in_topic_lists,
-        ).list_npn_fair_lane(name, &narrow)
+      # Category "About" topics are excluded in list_npn_fair_lane, not via
+      # TopicQuery's :no_definitions option — see the note there.
+      list = TopicQuery.new(user, per_page: limit.to_i).list_npn_fair_lane(name, &narrow)
       list.topics.present? ? list : nil
     rescue StandardError => e
       # One broken lane must never take the whole homepage down with it.

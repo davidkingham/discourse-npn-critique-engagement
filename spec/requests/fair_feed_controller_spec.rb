@@ -186,6 +186,26 @@ describe DiscourseNpnCritiqueEngagement::FairFeedController do
       expect(topic_ids("npn_conversation")).to contain_exactly(real.id)
     end
 
+    # Production regression: with category definitions hidden, TopicQuery's
+    # :no_definitions option added a categories-referencing clause our custom
+    # relation couldn't satisfy, and every lane silently failed to an empty
+    # feed. The lanes must still build (and still exclude the About topic).
+    it "still builds every lane when category definitions are hidden" do
+      SiteSetting.show_category_definitions_in_topic_lists = false
+      about = Fabricate(:topic, category: discussion_category, user: Discourse.system_user)
+      Fabricate(:post, topic: about, user: Discourse.system_user)
+      discussion_category.update!(topic_id: about.id)
+      real = make_topic(discussion_category)
+      make_topic(critique_category)
+
+      get "/critique-engagement/feed.json"
+
+      expect(response.status).to eq(200)
+      names = lanes.map { |entry| entry["name"] }
+      expect(names).to include("npn_conversation", "npn_waiting")
+      expect(topic_ids("npn_conversation")).to contain_exactly(real.id)
+    end
+
     it "leaves out categories the viewer cannot see" do
       secret = Fabricate(:private_category, group: Fabricate(:group))
       hidden = make_topic(secret)
