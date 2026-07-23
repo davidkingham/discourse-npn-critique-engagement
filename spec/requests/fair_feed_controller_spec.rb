@@ -161,7 +161,9 @@ describe DiscourseNpnCritiqueEngagement::FairFeedController do
       expect(lanes.map { |entry| entry["name"] }).not_to include("npn_conversation")
     end
 
-    it "shows work only from photographers the viewer has never replied to" do
+    # The graph rule in isolation (empty exclude), since the dedup below would
+    # otherwise hide both topics behind the waiting lane.
+    it "unmet shows strangers' work and never an author the viewer has replied to" do
       met = Fabricate(:user, created_at: 6.months.ago)
       stranger = Fabricate(:user, created_at: 6.months.ago)
 
@@ -169,10 +171,37 @@ describe DiscourseNpnCritiqueEngagement::FairFeedController do
       Fabricate(:post, topic: already_met, user: viewer, raw: "Thanks for sharing this one.")
       unmet_topic = make_topic(critique_category, stranger)
 
+      ids = DiscourseNpnCritiqueEngagement::Feed.unmet(viewer, []).topics.map(&:id)
+
+      expect(ids).to include(unmet_topic.id)
+      expect(ids).not_to include(already_met.id)
+    end
+
+    it "never repeats a photo between the waiting and unmet lanes" do
+      SiteSetting.npn_fair_feed_waiting_limit = 2
+      5.times { make_topic(critique_category, Fabricate(:user, created_at: 6.months.ago)) }
+
       get "/critique-engagement/feed.json"
 
-      expect(topic_ids("npn_unmet")).to include(unmet_topic.id)
-      expect(topic_ids("npn_unmet")).not_to include(already_met.id)
+      waiting = topic_ids("npn_waiting")
+      unmet = topic_ids("npn_unmet")
+      expect(waiting.size).to eq(2)
+      expect(unmet).to be_present
+      expect(waiting & unmet).to be_empty
+    end
+
+    it "closes with a Latest lane holding what the curated lanes didn't" do
+      SiteSetting.npn_fair_feed_conversation_limit = 1
+      3.times { make_topic(discussion_category, Fabricate(:user, created_at: 6.months.ago)) }
+
+      get "/critique-engagement/feed.json"
+
+      expect(lanes.map { |entry| entry["name"] }).to include("npn_latest")
+      conversation = topic_ids("npn_conversation")
+      latest = topic_ids("npn_latest")
+      expect(conversation.size).to eq(1)
+      expect(latest).to be_present
+      expect(conversation & latest).to be_empty
     end
 
     it "keeps the auto-generated category description topics out" do

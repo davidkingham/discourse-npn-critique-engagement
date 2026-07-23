@@ -43,16 +43,25 @@ module DiscourseNpnCritiqueEngagement
     end
 
     # Every lane the viewer should see, in display order, empty ones dropped.
+    #
+    # Built top to bottom through a shared `seen` set: each lane excludes every
+    # topic a lane above it already showed, so a photo appears once, in its
+    # most meaningful lane. That is what keeps "photographers you haven't met"
+    # from echoing "waiting for a first critique", and it makes the closing
+    # Latest lane a clean catch-all of everything not surfaced above.
+    #
     # `layout` travels to the client because each lane needs a different one:
     # picks are cropped covers in a scrolling carousel, waiting must never
     # crop and must read in rank order, conversations carry no image at all.
     def lanes(user)
+      seen = []
       [
-        picks_lane(user),
-        lane("npn_waiting", "justified", waiting(user)),
-        lane("npn_new_members", "cards", new_members(user)),
-        lane("npn_conversation", "rows", conversation(user)),
-        lane("npn_unmet", "justified", unmet(user)),
+        picks_lane(user, seen),
+        lane("npn_waiting", "justified", waiting(user, seen)),
+        lane("npn_new_members", "cards", new_members(user, seen)),
+        lane("npn_conversation", "rows", conversation(user, seen)),
+        lane("npn_unmet", "justified", unmet(user, seen)),
+        lane("npn_latest", "cards", latest(user, seen)),
       ].compact
     end
 
@@ -67,7 +76,7 @@ module DiscourseNpnCritiqueEngagement
     # latest pick in each genre instead, newest genre first, and carries a
     # {topic_id => genre} map the client labels each card with. Cropping is
     # acceptable here and nowhere else — these are covers, not the work.
-    def picks_lane(user)
+    def picks_lane(user, seen)
       chosen = latest_pick_per_genre
       return nil if chosen.blank?
 
@@ -75,7 +84,7 @@ module DiscourseNpnCritiqueEngagement
       genres = chosen.to_h { |pick| [pick[:topic_id], pick[:genre]] }
 
       list =
-        build(user, "npn_picks", ordered_ids.size) do |scope|
+        build(user, "npn_picks", ordered_ids.size, seen) do |scope|
           scope.where(id: ordered_ids).reorder(
             Arel.sql(
               ActiveRecord::Base.sanitize_sql_array(
@@ -175,19 +184,19 @@ module DiscourseNpnCritiqueEngagement
     end
 
     # The equity lane. Small on purpose: a call to action, not the page.
-    def waiting(user)
-      build(user, "npn_waiting", SiteSetting.npn_fair_feed_waiting_limit) do |scope|
+    def waiting(user, seen)
+      build(user, "npn_waiting", SiteSetting.npn_fair_feed_waiting_limit, seen) do |scope|
         FairRanking.order_fair(FairRanking.candidates(scope: scope))
       end
     end
 
     # Intros that haven't collected enough replies yet. A tiny lane, and
     # almost certainly the highest-leverage one for retention.
-    def new_members(user)
+    def new_members(user, seen)
       ids = category_tree(SiteSetting.npn_critique_new_member_category)
       return nil if ids.blank?
 
-      build(user, "npn_new_members", SiteSetting.npn_fair_feed_new_members_limit) do |scope|
+      build(user, "npn_new_members", SiteSetting.npn_fair_feed_new_members_limit, seen) do |scope|
         FairRanking.order_conversation(
           scope
             .where(category_id: ids)
@@ -199,12 +208,12 @@ module DiscourseNpnCritiqueEngagement
 
     # Reserved slots for everything that isn't a photo critique. Ranked
     # without the rolling score on purpose — see FairRanking#order_conversation.
-    def conversation(user)
+    def conversation(user, seen)
       configured = SiteSetting.npn_fair_feed_conversation_categories.to_s.split("|").map(&:to_i)
       excluded =
         FairRanking.category_ids + category_tree(SiteSetting.npn_critique_new_member_category)
 
-      build(user, "npn_conversation", SiteSetting.npn_fair_feed_conversation_limit) do |scope|
+      build(user, "npn_conversation", SiteSetting.npn_fair_feed_conversation_limit, seen) do |scope|
         scope = scope.where(category_id: configured) if configured.present?
         scope = scope.where.not(category_id: excluded) if excluded.present?
         FairRanking.order_conversation(scope.where("topics.created_at >= ?", freshness_cutoff))
@@ -223,14 +232,14 @@ module DiscourseNpnCritiqueEngagement
       )
     SQL
 
-    # Per viewer: work by photographers this member has never replied to.
-    # Deliberately its own small lane rather than a personalization of the
-    # main ranking, so the shared feed stays shared, cacheable and
-    # explainable when somebody asks why they see what they see.
-    def unmet(user)
+    # Per viewer: work by photographers this member has never replied to, and
+    # — via the shared `seen` set — not already up in the waiting lane. The
+    # dedup is what stops this echoing "waiting for a first critique": it
+    # surfaces the strangers' work that the small waiting fold didn't reach.
+    def unmet(user, seen)
       return nil if user.nil?
 
-      build(user, "npn_unmet", SiteSetting.npn_fair_feed_unmet_limit) do |scope|
+      build(user, "npn_unmet", SiteSetting.npn_fair_feed_unmet_limit, seen) do |scope|
         FairRanking.order_fair(
           FairRanking
             .candidates(scope: scope)
@@ -240,13 +249,27 @@ module DiscourseNpnCritiqueEngagement
       end
     end
 
-    # Each lane gets its own TopicQuery so per_page applies per lane. Returns
-    # nil rather than an empty list so the caller can drop the lane outright.
-    def build(user, name, limit, &narrow)
+    # The familiar feed, below the curated lanes: everything recently active
+    # that the lanes above didn't already surface, newest first. Its own
+    # limit, and — through `seen` — no repeats of anything shown above.
+    def latest(user, seen)
+      build(user, "npn_latest", SiteSetting.npn_fair_feed_latest_limit, seen) do |scope|
+        scope.reorder("topics.bumped_at DESC, topics.id DESC")
+      end
+    end
+
+    # Each lane gets its own TopicQuery so per_page applies per lane. Excludes
+    # everything already shown (the shared `seen` set) and adds its own results
+    # to it. Returns nil rather than an empty list so the caller drops the lane.
+    def build(user, name, limit, seen, &narrow)
       # Category "About" topics are excluded in list_npn_fair_lane, not via
       # TopicQuery's :no_definitions option — see the note there.
-      list = TopicQuery.new(user, per_page: limit.to_i).list_npn_fair_lane(name, &narrow)
-      list.topics.present? ? list : nil
+      list =
+        TopicQuery.new(user, per_page: limit.to_i).list_npn_fair_lane(name, exclude: seen, &narrow)
+      return nil if list.topics.blank?
+
+      seen.concat(list.topics.map(&:id))
+      list
     rescue StandardError => e
       # One broken lane must never take the whole homepage down with it.
       Rails.logger.warn("NPN fair feed: lane #{name} failed: #{e.class}: #{e.message}")

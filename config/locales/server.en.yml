@@ -28,6 +28,7 @@ en:
     npn_fair_feed_new_members_limit: "How many new-member introductions the 'say hello' lane shows."
     npn_fair_feed_conversation_limit: "Slots reserved for discussions. These are kept however much the critique category posts — that reservation is the whole point of the lane."
     npn_fair_feed_unmet_limit: "How many photos the 'photographers you haven't met' lane shows."
+    npn_fair_feed_latest_limit: "How many topics the closing Latest lane shows — everything recently active the curated lanes above didn't already surface."
     npn_fair_feed_conversation_categories: "Categories the conversation lane draws from. Leave blank to use every category outside the critique and new-member trees."
     npn_fair_feed_freshness_days: "A lane hides anything older than this, and renders nothing at all rather than showing stale content."
     npn_fair_feed_min_aspect: "Narrowest shape an image may be shown in. A taller portrait is letterboxed inside this box rather than cropped."

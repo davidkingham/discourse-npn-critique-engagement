@@ -281,6 +281,13 @@ plugins:
     min: 1
     max: 20
 
+  # The closing "Latest" catch-all lane: everything recently active the
+  # curated lanes above didn't already surface.
+  npn_fair_feed_latest_limit:
+    default: 24
+    min: 1
+    max: 60
+
   # Categories the "join the conversation" lane draws from. Leave blank to
   # use every category outside the critique tree.
   npn_fair_feed_conversation_categories:

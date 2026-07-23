@@ -23,9 +23,11 @@ module DiscourseNpnCritiqueEngagement
 
     # One lane. `narrow` receives the secured relation and returns a narrowed,
     # ordered one; `name` is the list's filter name, which the client uses to
-    # tell lanes apart.
-    def list_npn_fair_lane(name, &narrow)
+    # tell lanes apart. `exclude` drops topics already shown in an earlier
+    # lane, so the feed never repeats a topic across lanes.
+    def list_npn_fair_lane(name, exclude: [], &narrow)
       results = narrow.call(default_results).where(NOT_CATEGORY_DEFINITION)
+      results = results.where.not(id: exclude) if exclude.present?
       create_list(name, {}, results)
     end
   end
