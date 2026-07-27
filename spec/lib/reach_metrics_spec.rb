@@ -12,6 +12,13 @@ describe DiscourseNpnCritiqueEngagement::ReachMetrics do
     SiteSetting.npn_critique_min_reply_length = 100
   end
 
+  # These metrics bucket by week, and the fixtures below are placed relative
+  # to now ("2 days ago", "9 days ago"). Run on a Monday or Tuesday and
+  # "2 days ago" falls into the previous week, so the row the assertions look
+  # for doesn't exist. Freeze to a Thursday and the buckets are the same
+  # every run, whatever day the suite happens to run on.
+  before { freeze_time(Time.utc(2026, 7, 23, 12, 0)) }
+
   def critique_text(length = 200)
     ("The light on the ridge carries this frame, though the horizon sits high. " * 20)[0, length]
   end
