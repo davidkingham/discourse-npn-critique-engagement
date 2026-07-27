@@ -1,10 +1,15 @@
 # frozen_string_literal: true
 
+# Referenced in the class body below, and this file can be autoloaded before
+# after_initialize has required the libs.
+require_relative "../../../lib/discourse_npn_critique_engagement/pick_week"
+
 module DiscourseNpnCritiqueEngagement
   # A deliberate "no pick this week" for a genre — a moderator judged the
   # week's images and found nothing strong enough. It marks the slot as
   # handled on the dashboard board, distinct from a slot nobody got to.
-  # Keyed on when it was declared, like picks, so it resets every Sunday.
+  # Keyed on when it was declared, like picks, so it resets at Pacific
+  # midnight on Sunday.
   class NoPick < ActiveRecord::Base
     self.table_name = "npn_critique_no_picks"
 
@@ -15,7 +20,7 @@ module DiscourseNpnCritiqueEngagement
     scope :since, ->(time) { where(created_at: time..) }
 
     def self.current_week
-      since(Date.current.beginning_of_week(:sunday).beginning_of_day)
+      since(PickWeek.cutoff(PickWeek.current_start))
     end
   end
 end

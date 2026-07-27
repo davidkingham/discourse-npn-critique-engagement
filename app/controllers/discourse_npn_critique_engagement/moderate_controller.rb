@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# Referenced in the class body below, and this file can be autoloaded before
+# after_initialize has required the libs.
+require_relative "../../../lib/discourse_npn_critique_engagement/pick_week"
+
 module DiscourseNpnCritiqueEngagement
   # The moderator dashboard: everything a moderator triages, on one page.
   # Images still waiting for a critique (new members first — miss them and
@@ -162,7 +166,7 @@ module DiscourseNpnCritiqueEngagement
     # One row per genre tag in play: has a pick been MADE since the week
     # began? Moderators pick at week's end for the week that just closed, so
     # the board keys on when the pick happened — not on when the image was
-    # posted — and resets every Sunday.
+    # posted — and resets at Pacific midnight on Sunday.
     def pick_status
       return [] if category_ids.blank?
 
@@ -175,7 +179,7 @@ module DiscourseNpnCritiqueEngagement
           .where(archetype: Archetype.default)
           .where(deleted_at: nil, visible: true)
           .where("topics.user_id > 0")
-          .where(created_at: (week_start - 7.days).beginning_of_day..)
+          .where(created_at: PickWeek.cutoff(week_start - 7.days)..)
           .includes(:tags)
           .to_a
 
@@ -185,7 +189,7 @@ module DiscourseNpnCritiqueEngagement
       # supersedes it.
       no_picks =
         NoPick
-          .since(week_start.beginning_of_day)
+          .since(PickWeek.cutoff(week_start))
           .includes(:user)
           .order(:created_at)
           .group_by(&:genre)
@@ -217,11 +221,11 @@ module DiscourseNpnCritiqueEngagement
       end
     end
 
-    # Every pick made since Sunday — finalized notes and staged picks in
-    # their undo window alike (a staged pick must already fill its genre slot
-    # so nobody double-picks it).
+    # Every pick made since the week turned over — finalized notes and staged
+    # picks in their undo window alike (a staged pick must already fill its
+    # genre slot so nobody double-picks it).
     def pick_events
-      week_cutoff = week_start.beginning_of_day
+      week_cutoff = PickWeek.cutoff(week_start)
 
       notes =
         Post
@@ -275,7 +279,7 @@ module DiscourseNpnCritiqueEngagement
     end
 
     def week_start
-      @week_start ||= Date.current.beginning_of_week(:sunday)
+      @week_start ||= PickWeek.current_start
     end
 
     def pick_tag

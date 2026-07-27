@@ -32,8 +32,11 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
   end
 
   # The queue defaults to the last finished week, so list fixtures live there.
+  # Noon Pacific keeps them clear of either end of the week.
   def previous_week_time(offset = 0)
-    (Date.current.beginning_of_week(:sunday) - 7).beginning_of_day + 12.hours + offset
+    DiscourseNpnCritiqueEngagement::PickWeek.cutoff(
+      DiscourseNpnCritiqueEngagement::PickWeek.current_start - 7,
+    ) + 12.hours + offset
   end
 
   it "is staff-only" do
@@ -102,7 +105,7 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       get "/moderate/editors-picks.json"
 
       expect(response.parsed_body["week_start"]).to eq(
-        (Date.current.beginning_of_week(:sunday) - 7).to_s,
+        (DiscourseNpnCritiqueEngagement::PickWeek.current_start - 7).to_s,
       )
       ids = response.parsed_body["topics"].map { |topic| topic["id"] }
       expect(ids).not_to include(current_week_topic.id)
@@ -113,6 +116,22 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
       get "/moderate/editors-picks.json", params: { tag: "wildlife" }
 
       expect(response.parsed_body["topics"].map { |topic| topic["id"] }).to eq([wildlife_topic.id])
+    end
+
+    # Saturday 8pm Pacific is already Sunday in UTC. The week members live in
+    # runs on Pacific midnight, so that image belongs to the week that is
+    # closing, not the one about to open.
+    it "keeps a Saturday-evening Pacific image in the week that is closing" do
+      late_topic =
+        make_image_topic(quiet_poster, landscape_tag, created_at: Time.utc(2026, 7, 26, 3, 0))
+
+      get "/moderate/editors-picks.json", params: { week: "2026-07-19" }
+      expect(response.parsed_body["topics"].map { |topic| topic["id"] }).to include(late_topic.id)
+
+      get "/moderate/editors-picks.json", params: { week: "2026-07-26" }
+      expect(response.parsed_body["topics"].map { |topic| topic["id"] }).not_to include(
+        late_topic.id,
+      )
     end
 
     it "always offers every genre tag in the filter, even with no posts that week" do

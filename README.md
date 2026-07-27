@@ -53,6 +53,12 @@ board, and the top of the outreach and welcome queues.
 The weekly pick queue: one Sunday-anchored week of images with each poster's
 engagement standing beside them.
 
+- **Weeks turn over at Pacific midnight on Sunday** (1am Mountain), not at
+  UTC midnight, so a Saturday-evening image belongs to the week that is
+  closing rather than the one about to open. The boundary is resolved through
+  `America/Los_Angeles` in `PickWeek`, so it holds across daylight saving.
+  The queue, the dashboard board, and no-pick declarations all read the same
+  clock.
 - **Defaults to the last finished week** — moderators pick after a week
   closes, so with no explicit week the queue opens on the week that just
   ended, not the empty one that just started.
@@ -81,7 +87,7 @@ engagement standing beside them.
 - **"No pick this week"** — on the dashboard board a moderator can declare a
   deliberate no-pick for a genre when nothing strong enough was posted. It
   shows as a judged empty slot, distinct from a slot nobody got to, resets
-  each Sunday like picks, and is superseded by an actual pick.
+  with the pick week like picks, and is superseded by an actual pick.
 
 ### Outreach (`/moderate/outreach`)
 

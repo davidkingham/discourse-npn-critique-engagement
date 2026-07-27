@@ -166,7 +166,7 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
     end
 
     it "counts a pick made this week even when the image was posted last week" do
-      last_week = Date.current.beginning_of_week(:sunday) - 3.days
+      last_week = DiscourseNpnCritiqueEngagement::PickWeek.current_start - 3.days
       image = make_image_topic(veteran, created_at: last_week.to_time)
 
       post "/moderate/editors-picks/pick.json", params: { topic_id: image.id, genre: "landscape" }
@@ -179,7 +179,7 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
     end
 
     it "resets on Sunday — picks made before the week began no longer count" do
-      last_week = Date.current.beginning_of_week(:sunday) - 3.days
+      last_week = DiscourseNpnCritiqueEngagement::PickWeek.current_start - 3.days
       image = make_image_topic(veteran, created_at: last_week.to_time)
       post "/moderate/editors-picks/pick.json", params: { topic_id: image.id, genre: "landscape" }
       Post.where(topic_id: image.id, action_code: "npn_editors_pick").update_all(

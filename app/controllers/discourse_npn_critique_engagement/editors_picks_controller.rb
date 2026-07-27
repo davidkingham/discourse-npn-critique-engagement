@@ -3,6 +3,7 @@
 # Referenced in the class body below, and this file can be autoloaded during
 # migrations before after_initialize has required the libs.
 require_relative "../../../lib/discourse_npn_critique_engagement/editors_pick"
+require_relative "../../../lib/discourse_npn_critique_engagement/pick_week"
 
 module DiscourseNpnCritiqueEngagement
   # The weekly editors' pick review queue: one genre tag, one Sunday-anchored
@@ -167,9 +168,9 @@ module DiscourseNpnCritiqueEngagement
     # the just-started week would be empty.
     def requested_week
       if params[:week].present?
-        Date.parse(params[:week]).beginning_of_week(:sunday)
+        PickWeek.start_of(Date.parse(params[:week]))
       else
-        Date.current.beginning_of_week(:sunday) - 7
+        PickWeek.current_start - 7
       end
     rescue Date::Error
       raise Discourse::InvalidParameters.new(:week)
@@ -182,7 +183,7 @@ module DiscourseNpnCritiqueEngagement
           .where(archetype: Archetype.default)
           .where(deleted_at: nil, visible: true)
           .where("topics.user_id > 0")
-          .where(created_at: week_start.beginning_of_day...(week_start + 7.days).beginning_of_day)
+          .where(created_at: PickWeek.range(week_start))
           .where(
             "NOT EXISTS (SELECT 1 FROM topic_custom_fields tcf
              WHERE tcf.topic_id = topics.id AND tcf.name = 'npn_weekly_challenge_slug')",
