@@ -108,6 +108,23 @@ Each row shows the member's genres, standing, and a shared contact log.
   bracketed spots for the personal parts. The texts are locale strings
   (`npn_critique_engagement.admin.outreach.templates`), editable under
   Admin > Customize > Text.
+- **"Leave them be"** — some members have been contacted for years and are
+  not going to change, and without this they sit at the top of the queue
+  forever while every moderator rediscovers them. Setting a member aside
+  takes them off both outreach queues and the dashboard's mini lists, and
+  releases any outstanding claim.
+
+  The exclusion is deliberately narrow: the member is still scored, still
+  ranked in the feed, still badged, still counted in the community's numbers,
+  and still sees the composer nudge. Only their presence on a moderator's
+  to-do list changes.
+
+  A reason is required, because the moderator who wonders two years from now
+  where this member went will read it. Exclusions are indefinite by default
+  or can run out after a set period ("give them six months"), and they show
+  in a **Set aside (N)** section below the queues with one-click undo, so the
+  decision stays visible and reversible rather than becoming a hole nobody
+  can audit. The member's full contact log is untouched.
 
 ## Setup
 

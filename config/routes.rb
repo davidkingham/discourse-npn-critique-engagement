@@ -35,5 +35,7 @@ DiscourseNpnCritiqueEngagement::Engine.routes.draw do
     post "/outreach/notes" => "admin/outreach#create"
     post "/outreach/claim" => "admin/outreach#claim"
     delete "/outreach/claim" => "admin/outreach#unclaim"
+    post "/outreach/exclusion" => "admin/outreach#exclude"
+    delete "/outreach/exclusion" => "admin/outreach#unexclude"
   end
 end

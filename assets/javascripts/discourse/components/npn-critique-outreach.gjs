@@ -14,12 +14,52 @@ import DPageSubheader from "discourse/ui-kit/d-page-subheader";
 import dBoundAvatarTemplate from "discourse/ui-kit/helpers/d-bound-avatar-template";
 import dFormatDate from "discourse/ui-kit/helpers/d-format-date";
 import { i18n } from "discourse-i18n";
+import NpnOutreachExclusionModal from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-outreach-exclusion-modal";
 import NpnOutreachTemplateMenu from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-outreach-template-menu";
 import NpnTierBadge from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-tier-badge";
 
 function tagUrl(tag) {
   return getURL(`/tag/${tag}`);
 }
+
+// A member set aside: who decided, why, and whether it runs out.
+const ExcludedRow = <template>
+  <li class="npn-admin-outreach__row --excluded">
+    <div class="npn-admin-outreach__summary">
+      <a
+        class="npn-admin-outreach__member"
+        href={{userPath @row.username}}
+        data-user-card={{@row.username}}
+      >
+        {{dBoundAvatarTemplate @row.avatar_template "small"}}
+        <span class="npn-admin-outreach__username">{{@row.username}}</span>
+      </a>
+      <NpnTierBadge @tier={{@row.tier}} />
+      <span class="npn-admin-outreach__exclusion-meta">
+        {{#if @row.exclusion.expires_at}}
+          {{i18n
+            "npn_critique_engagement.admin.outreach.excluded_until"
+            username=@row.exclusion.username
+          }}
+          {{dFormatDate @row.exclusion.expires_at format="tiny"}}
+        {{else}}
+          {{i18n
+            "npn_critique_engagement.admin.outreach.excluded_indefinitely"
+            username=@row.exclusion.username
+          }}
+        {{/if}}
+      </span>
+      <DButton
+        @action={{fn @restore @row}}
+        @label="npn_critique_engagement.admin.outreach.exclude_undo"
+        class="btn-flat btn-small npn-admin-outreach__restore"
+      />
+    </div>
+    <p
+      class="npn-admin-outreach__exclusion-reason"
+    >{{@row.exclusion.reason}}</p>
+  </li>
+</template>;
 
 const OutreachRow = <template>
   <li class="npn-admin-outreach__row">
@@ -93,6 +133,12 @@ const OutreachRow = <template>
         @icon={{if (eq @expandedUserId @row.user_id) "angle-up" "angle-down"}}
         class="btn-small npn-admin-outreach__toggle"
       />
+      <DButton
+        @action={{fn @exclude @row}}
+        @label="npn_critique_engagement.admin.outreach.exclude"
+        @title="npn_critique_engagement.admin.outreach.exclude_title"
+        class="btn-flat btn-small npn-admin-outreach__exclude"
+      />
     </div>
 
     {{#if (eq @expandedUserId @row.user_id)}}
@@ -138,11 +184,14 @@ const OutreachRow = <template>
 </template>;
 
 export default class NpnCritiqueOutreach extends Component {
+  @service modal;
   @service toasts;
 
   @tracked rowsOverride = null;
   @tracked welcomeRowsOverride = null;
+  @tracked excludedRowsOverride = null;
   @tracked expandedUserId = null;
+  @tracked showExcluded = false;
   @tracked notes = null;
 
   get rows() {
@@ -151,6 +200,10 @@ export default class NpnCritiqueOutreach extends Component {
 
   get welcomeRows() {
     return this.welcomeRowsOverride ?? this.args.model.welcome_rows;
+  }
+
+  get excludedRows() {
+    return this.excludedRowsOverride ?? this.args.model.excluded_rows ?? [];
   }
 
   @action
@@ -227,6 +280,50 @@ export default class NpnCritiqueOutreach extends Component {
     }
   }
 
+  @action
+  exclude(row) {
+    this.modal.show(NpnOutreachExclusionModal, {
+      model: {
+        row,
+        onExcluded: (exclusion) => {
+          // Off the queues immediately, and into the excluded list so the
+          // decision is visible and undoable without a reload.
+          this.rowsOverride = this.rows.filter(
+            (existing) => existing.user_id !== row.user_id
+          );
+          this.welcomeRowsOverride = this.welcomeRows.filter(
+            (existing) => existing.user_id !== row.user_id
+          );
+          this.excludedRowsOverride = [
+            { ...row, claim: null, exclusion },
+            ...this.excludedRows,
+          ];
+          this.showExcluded = true;
+        },
+      },
+    });
+  }
+
+  @action
+  async restore(row) {
+    try {
+      await ajax("/admin/plugins/critique-engagement/outreach/exclusion", {
+        type: "DELETE",
+        data: { user_id: row.user_id },
+      });
+      // The member belongs back in whichever queue their tier puts them in,
+      // and only the server knows the current ordering.
+      await this.refresh();
+    } catch (error) {
+      popupAjaxError(error);
+    }
+  }
+
+  @action
+  toggleExcluded() {
+    this.showExcluded = !this.showExcluded;
+  }
+
   updateRow(userId, patch) {
     const apply = (existing) =>
       existing.user_id === userId ? { ...existing, ...patch } : existing;
@@ -241,6 +338,7 @@ export default class NpnCritiqueOutreach extends Component {
       );
       this.rowsOverride = data.rows;
       this.welcomeRowsOverride = data.welcome_rows;
+      this.excludedRowsOverride = data.excluded_rows;
     } catch {
       // The stale view is still usable; the next visit reloads it anyway.
     }
@@ -266,6 +364,7 @@ export default class NpnCritiqueOutreach extends Component {
               @saveNote={{this.saveNote}}
               @claim={{this.claim}}
               @unclaim={{this.unclaim}}
+              @exclude={{this.exclude}}
             />
           {{/each}}
         </ul>
@@ -291,6 +390,7 @@ export default class NpnCritiqueOutreach extends Component {
                 @saveNote={{this.saveNote}}
                 @claim={{this.claim}}
                 @unclaim={{this.unclaim}}
+                @exclude={{this.exclude}}
               />
             {{/each}}
           </ul>
@@ -300,6 +400,32 @@ export default class NpnCritiqueOutreach extends Component {
           </p>
         {{/if}}
       </section>
+
+      {{#if this.excludedRows.length}}
+        <section class="npn-admin-outreach__excluded">
+          <DButton
+            @action={{this.toggleExcluded}}
+            @translatedLabel={{i18n
+              "npn_critique_engagement.admin.outreach.excluded_title"
+              count=this.excludedRows.length
+            }}
+            @icon={{if this.showExcluded "angle-up" "angle-down"}}
+            class="btn-flat npn-admin-outreach__excluded-toggle"
+          />
+          {{#if this.showExcluded}}
+            <p class="npn-admin-outreach__excluded-description">
+              {{i18n
+                "npn_critique_engagement.admin.outreach.excluded_description"
+              }}
+            </p>
+            <ul class="npn-admin-outreach__list">
+              {{#each this.excludedRows as |row|}}
+                <ExcludedRow @row={{row}} @restore={{this.restore}} />
+              {{/each}}
+            </ul>
+          {{/if}}
+        </section>
+      {{/if}}
     </div>
   </template>
 }

@@ -268,8 +268,15 @@ module DiscourseNpnCritiqueEngagement
       SiteSetting.npn_critique_pick_excluded_tags.to_s.split("|")
     end
 
+    # Members a moderator has set aside stay off the dashboard's to-do lists
+    # too — the outreach page is where the decision is made and undone.
     def mini_rows(scope)
-      rows = scope.includes(:user).limit(MINI_LIST_LIMIT).reject { |row| row.user.nil? }
+      rows =
+        scope
+          .where.not(user_id: OutreachExclusion.active_user_ids)
+          .includes(:user)
+          .limit(MINI_LIST_LIMIT)
+          .reject { |row| row.user.nil? }
       serialize_data(
         rows,
         ReportRowSerializer,

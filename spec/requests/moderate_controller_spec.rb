@@ -291,4 +291,24 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
     expect(response.parsed_body["outreach"].map { |row| row["username"] }).to eq([veteran.username])
     expect(response.parsed_body["welcome"].map { |row| row["username"] }).to eq([newbie.username])
   end
+
+  it "keeps a set-aside member off the dashboard's mini lists" do
+    DiscourseNpnCritiqueEngagement::Score.create!(
+      user_id: veteran.id,
+      score: -250,
+      tier: :priority_outreach,
+      created_topics: 8,
+      computed_at: Time.zone.now,
+    )
+    DiscourseNpnCritiqueEngagement::OutreachExclusion.create!(
+      user_id: veteran.id,
+      staff_user: moderator,
+      reason: "Contacted for years, not going to change",
+    )
+    sign_in(moderator)
+
+    get "/moderate.json"
+
+    expect(response.parsed_body["outreach"]).to be_empty
+  end
 end

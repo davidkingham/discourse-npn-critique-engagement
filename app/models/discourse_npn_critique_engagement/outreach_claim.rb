@@ -22,7 +22,9 @@ module DiscourseNpnCritiqueEngagement
     end
 
     # One friendly PM to the claimer once the claim outlives the reminder
-    # window without a logged contact. Runs from the nightly job.
+    # window without a logged contact. Runs from the nightly job. A member set
+    # aside since the claim was made isn't outreach work any more, so the
+    # claimer doesn't get chased about them.
     def self.send_reminders
       reminder_hours = SiteSetting.npn_critique_claim_reminder_hours
       return if reminder_hours == 0
@@ -30,6 +32,7 @@ module DiscourseNpnCritiqueEngagement
       active
         .where(reminded_at: nil)
         .where("created_at <= ?", reminder_hours.hours.ago)
+        .where.not(user_id: OutreachExclusion.active_user_ids)
         .includes(:user, :staff_user)
         .find_each do |claim|
           next if claim.user.nil? || claim.staff_user.nil?

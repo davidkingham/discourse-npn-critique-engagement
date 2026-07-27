@@ -978,6 +978,72 @@
   &__empty {
     color: var(--primary-high);
   }
+
+  // Set-aside members read as settled rather than pending: muted, tucked
+  // below the live queues, but never hidden outright.
+  &__excluded {
+    margin-block-start: 1.5em;
+  }
+
+  &__excluded-description {
+    color: var(--primary-high);
+    font-size: var(--font-down-1);
+  }
+
+  &__row.--excluded {
+    border-style: dashed;
+    background: var(--primary-very-low);
+  }
+
+  &__exclusion-meta {
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
+  }
+
+  &__exclusion-reason {
+    margin: 0.5em 0 0;
+    color: var(--primary-high);
+    overflow-wrap: anywhere;
+  }
+
+  &__restore {
+    margin-inline-start: auto;
+  }
+}
+
+.npn-outreach-exclusion-modal {
+  &__member {
+    font-weight: bold;
+    margin-block-end: 0.25em;
+  }
+
+  &__explanation {
+    color: var(--primary-high);
+    font-size: var(--font-down-1);
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35em;
+    margin-block-end: 1em;
+
+    label {
+      font-weight: bold;
+      margin: 0;
+    }
+  }
+
+  &__reason {
+    width: 100%;
+    min-height: 5em;
+  }
+
+  &__hint {
+    margin: 0;
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
+  }
 }
 
 // --- The composed homepage ---------------------------------------------

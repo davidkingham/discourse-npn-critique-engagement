@@ -18,7 +18,8 @@ module DiscourseNpnCritiqueEngagement
                :trend,
                :last_outreach,
                :top_tags,
-               :claim
+               :claim,
+               :exclusion
 
     def username
       object.user.username
@@ -82,6 +83,21 @@ module DiscourseNpnCritiqueEngagement
 
     def include_claim?
       @options[:claims]&.key?(object.user_id)
+    end
+
+    def exclusion
+      record = @options[:exclusions]&.dig(object.user_id)
+      record &&
+        {
+          username: record.staff_user&.username,
+          reason: record.reason,
+          created_at: record.created_at,
+          expires_at: record.expires_at,
+        }
+    end
+
+    def include_exclusion?
+      @options[:exclusions]&.key?(object.user_id)
     end
   end
 end

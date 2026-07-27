@@ -130,6 +130,7 @@ en:
       not_picked: "This topic isn't an editors' pick."
     outreach:
       already_claimed: "@%{username} is already reaching out to this member."
+      excluded_member: "This member has been set aside. Put them back in the queue first if you want to reach out."
       pm_sent_note: 'Sent a private message: "%{title}"'
     badges:
       contributor_description: "Reached Healthy critique engagement in a calendar month"

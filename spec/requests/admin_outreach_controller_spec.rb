@@ -227,6 +227,120 @@ describe DiscourseNpnCritiqueEngagement::Admin::OutreachController do
     end
   end
 
+  describe "exclusions" do
+    before { sign_in(moderator) }
+
+    it "takes a member off the queue into a visible set-aside list, and puts them back" do
+      post "/admin/plugins/critique-engagement/outreach/exclusion.json",
+           params: {
+             user_id: member.id,
+             reason: "Contacted six times over three years, no change. Time to let him be.",
+           }
+
+      expect(response.status).to eq(201)
+      expect(response.parsed_body["expires_at"]).to be_nil
+
+      get "/admin/plugins/critique-engagement/outreach.json"
+      expect(response.parsed_body["rows"]).to be_empty
+      excluded = response.parsed_body["excluded_rows"]
+      expect(excluded.map { |row| row["username"] }).to contain_exactly(member.username)
+      expect(excluded.first["exclusion"]["username"]).to eq(moderator.username)
+      expect(excluded.first["exclusion"]["reason"]).to include("no change")
+
+      delete "/admin/plugins/critique-engagement/outreach/exclusion.json",
+             params: {
+               user_id: member.id,
+             }
+      expect(response.status).to eq(204)
+
+      get "/admin/plugins/critique-engagement/outreach.json"
+      expect(response.parsed_body["rows"].map { |row| row["username"] }).to contain_exactly(
+        member.username,
+      )
+      expect(response.parsed_body["excluded_rows"]).to be_empty
+    end
+
+    it "leaves the member's score and tier alone" do
+      post "/admin/plugins/critique-engagement/outreach/exclusion.json",
+           params: {
+             user_id: member.id,
+             reason: "Not going to change",
+           }
+
+      score = DiscourseNpnCritiqueEngagement::Score.find_by(user_id: member.id)
+      expect(score.tier).to eq("priority_outreach")
+      expect(score.score).to eq(-250)
+    end
+
+    it "returns the member to the queue once a timed exclusion runs out" do
+      post "/admin/plugins/critique-engagement/outreach/exclusion.json",
+           params: {
+             user_id: member.id,
+             reason: "Give him six months",
+             days: 180,
+           }
+
+      get "/admin/plugins/critique-engagement/outreach.json"
+      expect(response.parsed_body["rows"]).to be_empty
+
+      freeze_time(181.days.from_now) do
+        sign_in(moderator) # the original session has aged out by now
+        get "/admin/plugins/critique-engagement/outreach.json"
+
+        expect(response.parsed_body["rows"].map { |row| row["username"] }).to contain_exactly(
+          member.username,
+        )
+        expect(response.parsed_body["excluded_rows"]).to be_empty
+      end
+    end
+
+    it "releases an outstanding claim and refuses new ones" do
+      DiscourseNpnCritiqueEngagement::OutreachClaim.create!(
+        user_id: member.id,
+        staff_user: moderator,
+      )
+
+      post "/admin/plugins/critique-engagement/outreach/exclusion.json",
+           params: {
+             user_id: member.id,
+             reason: "Not going to change",
+           }
+
+      expect(DiscourseNpnCritiqueEngagement::OutreachClaim.where(user_id: member.id)).to be_empty
+
+      post "/admin/plugins/critique-engagement/outreach/claim.json", params: { user_id: member.id }
+      expect(response.status).to eq(409)
+    end
+
+    it "stops chasing the claimer about a member set aside after they claimed" do
+      DiscourseNpnCritiqueEngagement::OutreachClaim.create!(
+        user_id: member.id,
+        staff_user: moderator,
+        created_at: 25.hours.ago,
+      )
+      DiscourseNpnCritiqueEngagement::OutreachExclusion.create!(
+        user_id: member.id,
+        staff_user: moderator,
+        reason: "Not going to change",
+      )
+
+      expect { DiscourseNpnCritiqueEngagement::OutreachClaim.send_reminders }.not_to change {
+        Topic.private_messages.count
+      }
+    end
+
+    it "rejects an exclusion with no reason" do
+      post "/admin/plugins/critique-engagement/outreach/exclusion.json",
+           params: {
+             user_id: member.id,
+             reason: "   ",
+           }
+
+      expect(response.status).to eq(400)
+      expect(DiscourseNpnCritiqueEngagement::OutreachExclusion.count).to eq(0)
+    end
+  end
+
   it "rejects blank notes" do
     sign_in(moderator)
 
