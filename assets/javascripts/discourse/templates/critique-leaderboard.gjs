@@ -47,12 +47,6 @@ export default <template>
             {{#if entry.tier}}
               <NpnTierBadge @tier={{entry.tier}} />
             {{/if}}
-            <span class="npn-leaderboard__weighted">
-              {{entry.weighted_replies}}
-              <span class="npn-leaderboard__weighted-label">
-                {{i18n "npn_critique_engagement.leaderboard.weighted"}}
-              </span>
-            </span>
           </li>
         {{/each}}
       </ol>

@@ -9,11 +9,12 @@ describe DiscourseNpnCritiqueEngagement::Recognition do
 
   before { SiteSetting.npn_critique_engagement_enabled = true }
 
-  def create_score(user, tier:)
+  def create_score(user, tier:, topics_replied: 0)
     DiscourseNpnCritiqueEngagement::Score.create!(
       user_id: user.id,
       score: 100,
       tier: tier,
+      topics_replied: topics_replied,
       computed_at: Time.zone.now,
     )
   end
@@ -80,6 +81,28 @@ describe DiscourseNpnCritiqueEngagement::Recognition do
     end
   end
 
+  describe "given count" do
+    it "caches counts at the floor and above, and nothing below it" do
+      SiteSetting.npn_critique_given_chip_min_count = 3
+      create_score(guide_member, tier: :excellent, topics_replied: 7)
+      create_score(healthy_member, tier: :healthy, topics_replied: 3)
+      create_score(watch_member, tier: :watch, topics_replied: 2)
+      described_class.rebuild!
+
+      expect(described_class.given_count_for(guide_member.id)).to eq(7)
+      expect(described_class.given_count_for(healthy_member.id)).to eq(3)
+      expect(described_class.given_count_for(watch_member.id)).to be_nil
+    end
+
+    it "is empty when the given chip is disabled" do
+      SiteSetting.npn_critique_given_chip_enabled = false
+      create_score(guide_member, tier: :excellent, topics_replied: 7)
+      described_class.rebuild!
+
+      expect(described_class.given_count_for(guide_member.id)).to be_nil
+    end
+  end
+
   describe "post serialization" do
     fab!(:post_record) { Fabricate(:post, user: guide_member) }
 
@@ -114,6 +137,23 @@ describe DiscourseNpnCritiqueEngagement::Recognition do
         PostSerializer.new(post_record, scope: Guardian.new, root: false).as_json.keys,
       ).not_to include(:npn_critique_recognition)
     end
+
+    it "serializes the give-and-take count for everyone" do
+      create_score(guide_member, tier: :healthy, topics_replied: 5)
+      described_class.rebuild!
+
+      json = PostSerializer.new(post_record, scope: Guardian.new, root: false).as_json
+      expect(json[:npn_critique_given_recently]).to eq(5)
+    end
+
+    it "omits the give-and-take count below the floor" do
+      create_score(guide_member, tier: :healthy, topics_replied: 1)
+      described_class.rebuild!
+
+      expect(
+        PostSerializer.new(post_record, scope: Guardian.new, root: false).as_json.keys,
+      ).not_to include(:npn_critique_given_recently)
+    end
   end
 
   describe "user card serialization" do
@@ -123,6 +163,14 @@ describe DiscourseNpnCritiqueEngagement::Recognition do
 
       json = UserCardSerializer.new(guide_member, scope: Guardian.new, root: false).as_json
       expect(json[:npn_critique_recognition]).to eq("guide")
+    end
+
+    it "serializes the give-and-take count publicly" do
+      create_score(guide_member, tier: :healthy, topics_replied: 5)
+      described_class.rebuild!
+
+      json = UserCardSerializer.new(guide_member, scope: Guardian.new, root: false).as_json
+      expect(json[:npn_critique_given_recently]).to eq(5)
     end
   end
 end

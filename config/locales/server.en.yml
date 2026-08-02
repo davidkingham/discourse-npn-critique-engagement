@@ -83,6 +83,8 @@ en:
     npn_critique_rising_min_weighted: "Minimum weighted critique count to win — quiet months award nobody."
     npn_critique_chips_enabled: "Show public recognition chips next to poster names and on the user card."
     npn_critique_chip_min_tier: "Lowest tier that earns a recognition chip. 'excellent' shows chips for Guides and Stewards only; 'healthy' also marks Contributors."
+    npn_critique_given_chip_enabled: "Show a public count next to member names of how many threads they critiqued in the rolling window. Positive only: below the minimum, nothing shows."
+    npn_critique_given_chip_min_count: "Threads critiqued in the rolling window before the public count appears."
     npn_critique_leaderboard_size: "How many top critics the leaderboard and monthly highlights topic show."
     npn_critique_nudge_enabled: "Show a dismissible give-and-take reminder above the composer when a member below the healthy ratio starts a new topic in the critique category."
     npn_critique_nudge_ratio: "Show the reminder when a member's threads-critiqued to topics-posted ratio is below this."
@@ -114,7 +116,7 @@ en:
       text_body_template: |
         Congratulations, @%{username}! :seedling:
 
-        You gave more thoughtful critiques than any other new member in %{month} — %{weighted} weighted critiques in your first weeks with us. That's exactly what makes this community work, and it hasn't gone unnoticed: you've been awarded the **%{badge_name}** badge, and for the next month a Rising Critic mark will appear next to your name.
+        You gave more thoughtful critiques than any other new member in %{month}. That's exactly what makes this community work, and it hasn't gone unnoticed: you've been awarded the **%{badge_name}** badge, and for the next month a Rising Critic mark will appear next to your name.
 
         Thank you for diving straight in. Keep sharing your eye — members who critique regularly get more feedback on their own work, too.
   npn_critique_engagement:
@@ -142,8 +144,8 @@ en:
     highlights_topic:
       title: "Critique highlights — %{month}"
       table_header: |-
-        | Rank | Member | Weighted critiques |
-        |---|---|---|
+        | Rank | Member |
+        |---|---|
       body: |
         Thank you to everyone who gave their time and eyes to other members' work in %{month} — this category runs on your generosity.
 
@@ -152,7 +154,7 @@ en:
         %{winners}
 
         Every substantive critique counts, whenever you give it — visit a few threads and join the conversation. See where you stand on the [leaderboard](%{base_url}/critique-engagement/leaderboard), and browse the [hall of fame](%{base_url}/critique-engagement/hall-of-fame) for the best critiques ever written here.
-      rising_line: "🌱 **Rising critic of the month:** @%{username} — %{weighted} weighted critiques in their first weeks. Welcome, and thank you for diving straight in!"
+      rising_line: "🌱 **Rising critic of the month:** @%{username}, our most generous new critic. Welcome, and thank you for diving straight in!"
       awarded_section_title: "Most awarded critiques of %{month}"
       awarded_line:
         one: "%{rank}. @%{username} in [%{topic_title}](%{url}) — %{count} award"

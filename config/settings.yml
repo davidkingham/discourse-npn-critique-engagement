@@ -445,6 +445,17 @@ plugins:
       - excellent
       - healthy
 
+  # The public give-and-take count next to member names: how many threads
+  # they critiqued in the rolling window. A count with no denominator can
+  # celebrate but never shame — below the floor nothing shows at all.
+  npn_critique_given_chip_enabled:
+    default: true
+    client: true
+
+  npn_critique_given_chip_min_count:
+    default: 3
+    min: 1
+
   # --- Leaderboard ----------------------------------------------------------
 
   npn_critique_leaderboard_size:

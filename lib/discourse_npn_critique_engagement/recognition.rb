@@ -4,9 +4,11 @@ module DiscourseNpnCritiqueEngagement
   # Who currently wears a recognition chip, cached for the post serializer's
   # hot path. Levels: "steward" (permanent badge holders), "guide" (currently
   # Excellent in the rolling window), and "contributor" (currently Healthy —
-  # only when npn_critique_chip_min_tier includes it). Rebuilt after every
-  # nightly score run, at monthly recognition, and on relevant setting
-  # changes; positive signals only, so caching liberally is safe.
+  # only when npn_critique_chip_min_tier includes it). Also caches the public
+  # give-and-take count (threads critiqued in the window, floor applied), the
+  # same way and for the same reason. Rebuilt after every nightly score run,
+  # at monthly recognition, and on relevant setting changes; positive signals
+  # only, so caching liberally is safe.
   module Recognition
     extend self
 
@@ -15,12 +17,26 @@ module DiscourseNpnCritiqueEngagement
       map[user_id.to_s]
     end
 
+    def given_count_for(user_id)
+      return nil if user_id.nil?
+      given_map[user_id.to_s]
+    end
+
     def rebuild!
+      cache["given"] = build_given_map
       cache["map"] = build_map
     end
 
     def map
       cache["map"] || rebuild!
+    end
+
+    def given_map
+      cache["given"] ||
+        begin
+          rebuild!
+          cache["given"]
+        end
     end
 
     private
@@ -59,6 +75,18 @@ module DiscourseNpnCritiqueEngagement
       end
 
       result
+    end
+
+    # Distinct threads critiqued in the rolling window, for the public
+    # give-and-take count. Only members at or above the floor are cached: a
+    # count with no denominator can celebrate but never shame.
+    def build_given_map
+      return {} if !SiteSetting.npn_critique_given_chip_enabled
+
+      Score
+        .where(topics_replied: SiteSetting.npn_critique_given_chip_min_count..)
+        .pluck(:user_id, :topics_replied)
+        .to_h { |user_id, count| [user_id.to_s, count] }
     end
 
     # The rising critic's spotlight chip lasts exactly the month after the

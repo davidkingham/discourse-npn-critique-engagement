@@ -38,7 +38,7 @@ describe DiscourseNpnCritiqueEngagement::LeaderboardsController do
       create_score(struggling_member, weighted: 1.1, tier: :watch)
     end
 
-    it "ranks the window's critics by weighted count without exposing raw scores" do
+    it "ranks the window's critics by weighted count without exposing any numbers" do
       get "/critique-engagement/leaderboard.json"
 
       expect(response.status).to eq(200)
@@ -47,8 +47,7 @@ describe DiscourseNpnCritiqueEngagement::LeaderboardsController do
       expect(entries.map { |entry| entry["username"] }).to eq(
         [top_critic.username, runner_up.username, struggling_member.username],
       )
-      expect(entries.first["weighted_replies"]).to eq(12.5)
-      expect(entries.first.keys).not_to include("score")
+      expect(entries.first.keys).not_to include("score", "weighted_replies")
     end
 
     it "never shows a below-healthy tier publicly" do
@@ -90,6 +89,7 @@ describe DiscourseNpnCritiqueEngagement::LeaderboardsController do
       expect(seasons.map { |season| season["username"] }).to eq(
         [runner_up.username, top_critic.username],
       )
+      expect(seasons.first.keys).not_to include("score", "weighted_replies")
     end
 
     it "lists the all-time most awarded critiques" do

@@ -181,7 +181,6 @@ module DiscourseNpnCritiqueEngagement
         winner.user,
         :npn_rising_critic,
         month: @month.strftime("%B %Y"),
-        weighted: winner.weighted_replies.round(1).to_s,
         badge_name: badge.name,
       )
       PluginStore.set(
@@ -265,7 +264,6 @@ module DiscourseNpnCritiqueEngagement
             I18n.t(
               "npn_critique_engagement.highlights_topic.rising_line",
               username: rising_winner.user.username,
-              weighted: rising_winner.weighted_replies.round(1),
             )
       end
 
@@ -314,12 +312,14 @@ module DiscourseNpnCritiqueEngagement
 
     MEDALS = %w[🥇 🥈 🥉].freeze
 
+    # Ranked names only: the weighted count that orders the table is an
+    # internal number and stays on the admin report.
     def winners_table(winners)
       header = I18n.t("npn_critique_engagement.highlights_topic.table_header")
       lines =
         winners.each_with_index.map do |snapshot, index|
           rank = MEDALS[index] || "#{index + 1}."
-          "| #{rank} | @#{snapshot.user.username} | #{snapshot.weighted_replies.round(1)} |"
+          "| #{rank} | @#{snapshot.user.username} |"
         end
       ([header] + lines).join("\n")
     end

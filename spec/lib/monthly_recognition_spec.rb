@@ -146,6 +146,7 @@ describe DiscourseNpnCritiqueEngagement::MonthlyRecognition do
       expect(pm).to be_present
       expect(pm.first_post.raw).to include(SiteSetting.npn_critique_rising_badge_name)
       expect(pm.first_post.raw).to include(last_month.strftime("%B %Y"))
+      expect(pm.first_post.raw).not_to match(/weighted/i)
     end
 
     it "mentions the rising critic in the highlights topic" do
@@ -252,12 +253,13 @@ describe DiscourseNpnCritiqueEngagement::MonthlyRecognition do
     expect(topic.first_post.raw).to include(awarded_post.url)
   end
 
-  it "posts a pinned highlights topic naming the top critics" do
+  it "posts a pinned highlights topic naming the top critics without their counts" do
     described_class.record_due
 
     topic = Topic.where(category_id: category.id).order(created_at: :desc).first
     expect(topic.title).to include(last_month.strftime("%B %Y"))
     expect(topic.pinned_until).to be_present
     expect(topic.first_post.raw).to include("@#{star_critic.username}")
+    expect(topic.first_post.raw).not_to match(/weighted/i)
   end
 end

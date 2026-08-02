@@ -139,10 +139,6 @@ export default <template>
                   {{season.username}}
                 </span>
               </a>
-              <span class="npn-hall-of-fame__season-weighted">
-                {{season.weighted_replies}}
-                {{i18n "npn_critique_engagement.leaderboard.weighted"}}
-              </span>
             </li>
           {{/each}}
         </ul>

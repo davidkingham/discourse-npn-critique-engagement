@@ -89,6 +89,21 @@
   }
 }
 
+// The public give-and-take count, next to poster names and on the user card.
+// Deliberately quieter than the recognition chips: it is a fact, not an
+// honor.
+.npn-given-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: var(--font-down-2);
+  color: var(--primary-medium);
+
+  .d-icon {
+    color: currentcolor;
+  }
+}
+
 .npn-critique-nudge {
   display: flex;
   align-items: flex-start;
@@ -165,19 +180,6 @@
   &__member {
     flex: 1;
   }
-
-  &__weighted {
-    display: flex;
-    align-items: baseline;
-    gap: 0.35em;
-    font-weight: bold;
-  }
-
-  &__weighted-label {
-    font-weight: normal;
-    font-size: var(--font-down-1);
-    color: var(--primary-high);
-  }
 }
 
 .npn-hall-of-fame {
@@ -219,12 +221,6 @@
 
   &__season-month {
     min-width: 9em;
-  }
-
-  &__season-weighted {
-    margin-inline-start: auto;
-    font-size: var(--font-down-1);
-    color: var(--primary-high);
   }
 
   &__critique-list {

@@ -103,7 +103,6 @@ module DiscourseNpnCritiqueEngagement
             name: snapshot.user.name,
             avatar_template: snapshot.user.avatar_template,
             tier: snapshot.public_tier,
-            weighted_replies: snapshot.weighted_replies.round(1),
           }
         end
     end

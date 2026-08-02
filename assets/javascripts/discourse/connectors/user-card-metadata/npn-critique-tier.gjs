@@ -1,13 +1,25 @@
+import dIcon from "discourse/ui-kit/helpers/d-icon";
 import { i18n } from "discourse-i18n";
 import NpnCritiqueChip from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-critique-chip";
 import NpnTierBadge from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-tier-badge";
 
-// Public recognition chip for everyone; tier + score only for staff — a
-// member never sees another member's standing.
+// Public recognition chip and give-and-take count for everyone; tier + score
+// only for staff — a member never sees another member's standing.
 export default <template>
   {{#if @outletArgs.user.npn_critique_recognition}}
     <div class="npn-critique-user-card__recognition">
       <NpnCritiqueChip @level={{@outletArgs.user.npn_critique_recognition}} />
+    </div>
+  {{/if}}
+  {{#if @outletArgs.user.npn_critique_given_recently}}
+    <div class="npn-critique-user-card__given">
+      <span class="npn-given-chip">
+        {{dIcon "hand-holding-heart"}}
+        {{i18n
+          "npn_critique_engagement.given_chip.label"
+          count=@outletArgs.user.npn_critique_given_recently
+        }}
+      </span>
     </div>
   {{/if}}
   {{#if @outletArgs.user.npn_critique_engagement}}

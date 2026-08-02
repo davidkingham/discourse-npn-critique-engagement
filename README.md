@@ -18,6 +18,12 @@ motivation, public recognition.
   permanent-badge holders ("Critique Steward") get a labeled chip next to
   their name on every post and on the user card. Positive signals only;
   `npn_critique_chip_min_tier` can extend chips to Healthy members.
+- **Give-and-take count** (`npn_critique_given_chip_enabled`) — a small
+  public count next to poster names and on the user card: how many threads
+  the member critiqued in the rolling window. It only appears at or above
+  `npn_critique_given_chip_min_count`, so it can celebrate generosity but
+  never mark anyone as a taker — a count with no denominator has no bad
+  values, only good ones and absence.
 - **Rising Critic** (`npn_critique_rising_enabled`) — each month, the most
   generous new-member critic earns a one-time badge, a distinctly styled
   spotlight chip for the following month, a mention in the highlights topic,
@@ -38,8 +44,10 @@ motivation, public recognition.
 - **Public surface** — monthly leaderboard (`/critique-engagement/leaderboard`),
   hall of fame (`/critique-engagement/hall-of-fame`), three recognition badges
   with flair groups, a pinned season-close winners topic, and a dismissible
-  give-and-take composer reminder. No public surface ever shows a low tier or
-  a raw score.
+  give-and-take composer reminder. No public surface ever shows a low tier,
+  a raw score, or a weighted critique count — the leaderboard and highlights
+  topic show ranked names only, and the numbers behind the ranking stay on
+  the admin report and each member's own private impact panel.
 
 ## Moderator tools (`/moderate`)
 

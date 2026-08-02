@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
 module DiscourseNpnCritiqueEngagement
-  # Public recognition is deliberately coarse: rank, tier medal, and weighted
-  # critique count — never the raw score, never a below-healthy tier.
+  # Public recognition is deliberately coarse: rank and tier medal only —
+  # never the raw score, never the weighted count, never a below-healthy
+  # tier. The ordering still comes from the weighted count server-side; the
+  # number itself stays on the admin report.
   class LeaderboardEntrySerializer < ApplicationSerializer
-    attributes :username, :name, :avatar_template, :tier, :weighted_replies
+    attributes :username, :name, :avatar_template, :tier
 
     def username
       object.user.username
@@ -20,10 +22,6 @@ module DiscourseNpnCritiqueEngagement
 
     def tier
       object.public_tier
-    end
-
-    def weighted_replies
-      object.weighted_replies.round(1)
     end
   end
 end

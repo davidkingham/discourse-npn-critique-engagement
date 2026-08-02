@@ -115,6 +115,28 @@ after_initialize do
     end,
   ) { DiscourseNpnCritiqueEngagement::Recognition.level_for(object.id) }
 
+  # The public give-and-take count: threads critiqued in the rolling window,
+  # next to poster names and on the user card. A count with no denominator —
+  # below the floor it simply doesn't appear, so it can never mark a member
+  # as a taker.
+  add_to_serializer(
+    :post,
+    :npn_critique_given_recently,
+    include_condition: -> do
+      SiteSetting.npn_critique_engagement_enabled && SiteSetting.npn_critique_given_chip_enabled &&
+        DiscourseNpnCritiqueEngagement::Recognition.given_count_for(object.user_id).present?
+    end,
+  ) { DiscourseNpnCritiqueEngagement::Recognition.given_count_for(object.user_id) }
+
+  add_to_serializer(
+    :user_card,
+    :npn_critique_given_recently,
+    include_condition: -> do
+      SiteSetting.npn_critique_engagement_enabled && SiteSetting.npn_critique_given_chip_enabled &&
+        DiscourseNpnCritiqueEngagement::Recognition.given_count_for(object.id).present?
+    end,
+  ) { DiscourseNpnCritiqueEngagement::Recognition.given_count_for(object.id) }
+
   # Sending the member a PM completes an outreach claim on its own — the
   # moderator shouldn't also have to log the contact by hand.
   on(:topic_created) do |topic, _opts, user|
@@ -129,6 +151,8 @@ after_initialize do
          npn_critique_pillar_badge_name
          npn_critique_engagement_enabled
          npn_critique_rising_enabled
+         npn_critique_given_chip_enabled
+         npn_critique_given_chip_min_count
        ].include?(name)
       DiscourseNpnCritiqueEngagement::Recognition.rebuild!
     end

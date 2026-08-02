@@ -49,7 +49,6 @@ en:
           other: "The most generous critics of the last %{count} days. The board rolls continuously — every substantive critique counts, whenever you give it."
         rank: "Rank"
         member: "Member"
-        weighted: "Weighted critiques"
         empty: "No critiques scored in the current window — the podium is wide open."
         hall_of_fame_link: "Hall of fame"
       hall_of_fame:
@@ -99,6 +98,10 @@ en:
         history:
           title: "Monthly snapshots"
           empty: "Your history will appear after your first month-end snapshot."
+      given_chip:
+        label:
+          one: "Gave %{count} critique recently"
+          other: "Gave %{count} critiques recently"
       nudge:
         copy: "You've shared %{shared} photos and critiqued %{critiqued} recently. Image Critiques runs on give-and-take — consider visiting a few threads first. Members who critique regularly get more feedback on their own work."
         dismiss: "Dismiss reminder"
