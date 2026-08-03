@@ -18,6 +18,7 @@ register_svg_icon "ranking-star"
 register_svg_icon "arrow-trend-up"
 register_svg_icon "arrow-trend-down"
 register_svg_icon "hand-holding-heart"
+register_svg_icon "handshake"
 register_svg_icon "circle-pause"
 register_svg_icon "eye"
 register_svg_icon "moon"
@@ -94,6 +95,38 @@ after_initialize do
     row && { score: row.score.round, tier: row.tier }
   end
 
+  # Both chips are asked for twice per object — once by include_condition and
+  # once for the value — and a topic page serializes them for every post, so
+  # each lookup is memoized rather than repeated.
+  add_to_class(:post_serializer, :npn_critique_level) do
+    if !defined?(@npn_critique_level)
+      @npn_critique_level = DiscourseNpnCritiqueEngagement::Recognition.level_for(object.user_id)
+    end
+    @npn_critique_level
+  end
+
+  add_to_class(:post_serializer, :npn_critique_given) do
+    if !defined?(@npn_critique_given)
+      @npn_critique_given =
+        DiscourseNpnCritiqueEngagement::Recognition.given_count_for(object.user_id)
+    end
+    @npn_critique_given
+  end
+
+  add_to_class(:user_card_serializer, :npn_critique_level) do
+    if !defined?(@npn_critique_level)
+      @npn_critique_level = DiscourseNpnCritiqueEngagement::Recognition.level_for(object.id)
+    end
+    @npn_critique_level
+  end
+
+  add_to_class(:user_card_serializer, :npn_critique_given) do
+    if !defined?(@npn_critique_given)
+      @npn_critique_given = DiscourseNpnCritiqueEngagement::Recognition.given_count_for(object.id)
+    end
+    @npn_critique_given
+  end
+
   # Public recognition chips: positive signals only, rendered next to poster
   # names and on the user card. Backed by a cache so the post serializer's
   # hot path stays a hash lookup.
@@ -102,40 +135,41 @@ after_initialize do
     :npn_critique_recognition,
     include_condition: -> do
       SiteSetting.npn_critique_engagement_enabled && SiteSetting.npn_critique_chips_enabled &&
-        DiscourseNpnCritiqueEngagement::Recognition.level_for(object.user_id).present?
+        npn_critique_level.present?
     end,
-  ) { DiscourseNpnCritiqueEngagement::Recognition.level_for(object.user_id) }
+  ) { npn_critique_level }
 
   add_to_serializer(
     :user_card,
     :npn_critique_recognition,
     include_condition: -> do
       SiteSetting.npn_critique_engagement_enabled && SiteSetting.npn_critique_chips_enabled &&
-        DiscourseNpnCritiqueEngagement::Recognition.level_for(object.id).present?
+        npn_critique_level.present?
     end,
-  ) { DiscourseNpnCritiqueEngagement::Recognition.level_for(object.id) }
+  ) { npn_critique_level }
 
   # The public give-and-take count: threads critiqued in the rolling window,
   # next to poster names and on the user card. A count with no denominator —
   # below the floor it simply doesn't appear, so it can never mark a member
-  # as a taker.
+  # as a taker — and banded rather than exact, so it can't be divided into a
+  # member's publicly countable topics to recover the ratio it replaced.
   add_to_serializer(
     :post,
     :npn_critique_given_recently,
     include_condition: -> do
       SiteSetting.npn_critique_engagement_enabled && SiteSetting.npn_critique_given_chip_enabled &&
-        DiscourseNpnCritiqueEngagement::Recognition.given_count_for(object.user_id).present?
+        npn_critique_given.present?
     end,
-  ) { DiscourseNpnCritiqueEngagement::Recognition.given_count_for(object.user_id) }
+  ) { npn_critique_given }
 
   add_to_serializer(
     :user_card,
     :npn_critique_given_recently,
     include_condition: -> do
       SiteSetting.npn_critique_engagement_enabled && SiteSetting.npn_critique_given_chip_enabled &&
-        DiscourseNpnCritiqueEngagement::Recognition.given_count_for(object.id).present?
+        npn_critique_given.present?
     end,
-  ) { DiscourseNpnCritiqueEngagement::Recognition.given_count_for(object.id) }
+  ) { npn_critique_given }
 
   # Sending the member a PM completes an outreach claim on its own — the
   # moderator shouldn't also have to log the contact by hand.
@@ -144,14 +178,15 @@ after_initialize do
   end
 
   # The recognition cache derives from these settings, so changing them must
-  # invalidate it (score runs handle the rest).
+  # invalidate it (score runs handle the rest). npn_critique_chips_enabled and
+  # npn_critique_given_chip_enabled are deliberately absent: the serializers
+  # gate on those directly, so the cached data does not depend on them.
   on(:site_setting_changed) do |name, _old_value, _new_value|
     if %i[
          npn_critique_chip_min_tier
          npn_critique_pillar_badge_name
          npn_critique_engagement_enabled
          npn_critique_rising_enabled
-         npn_critique_given_chip_enabled
          npn_critique_given_chip_min_count
        ].include?(name)
       DiscourseNpnCritiqueEngagement::Recognition.rebuild!

@@ -18,12 +18,14 @@ motivation, public recognition.
   permanent-badge holders ("Critique Steward") get a labeled chip next to
   their name on every post and on the user card. Positive signals only;
   `npn_critique_chip_min_tier` can extend chips to Healthy members.
-- **Give-and-take count** (`npn_critique_given_chip_enabled`) — a small
-  public count next to poster names and on the user card: how many threads
-  the member critiqued in the rolling window. It only appears at or above
-  `npn_critique_given_chip_min_count`, so it can celebrate generosity but
-  never mark anyone as a taker — a count with no denominator has no bad
-  values, only good ones and absence.
+- **Give-and-take count** (`npn_critique_given_chip_enabled`, off by default)
+  — a small public count next to poster names and on the user card: how many
+  threads the member critiqued in the rolling window. It only appears at or
+  above `npn_critique_given_chip_min_count`, so it can celebrate generosity
+  but never mark anyone as a taker — a count with no denominator has no bad
+  values, only good ones and absence. It reads as a band ("Gave 10+
+  critiques…"), never an exact figure, so it can't be divided into a member's
+  publicly countable topic count to recover the ratio it replaced.
 - **Rising Critic** (`npn_critique_rising_enabled`) — each month, the most
   generous new-member critic earns a one-time badge, a distinctly styled
   spotlight chip for the following month, a mention in the highlights topic,

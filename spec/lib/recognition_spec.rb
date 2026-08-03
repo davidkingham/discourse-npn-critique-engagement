@@ -82,24 +82,34 @@ describe DiscourseNpnCritiqueEngagement::Recognition do
   end
 
   describe "given count" do
-    it "caches counts at the floor and above, and nothing below it" do
-      SiteSetting.npn_critique_given_chip_min_count = 3
+    before { SiteSetting.npn_critique_given_chip_min_count = 3 }
+
+    it "bands counts down, keeps the floor as the lowest band, and skips members below it" do
       create_score(guide_member, tier: :excellent, topics_replied: 7)
       create_score(healthy_member, tier: :healthy, topics_replied: 3)
       create_score(watch_member, tier: :watch, topics_replied: 2)
       described_class.rebuild!
 
-      expect(described_class.given_count_for(guide_member.id)).to eq(7)
+      expect(described_class.given_count_for(guide_member.id)).to eq(5)
       expect(described_class.given_count_for(healthy_member.id)).to eq(3)
       expect(described_class.given_count_for(watch_member.id)).to be_nil
     end
 
-    it "is empty when the given chip is disabled" do
-      SiteSetting.npn_critique_given_chip_enabled = false
-      create_score(guide_member, tier: :excellent, topics_replied: 7)
+    it "never publishes a band below the configured floor" do
+      SiteSetting.npn_critique_given_chip_min_count = 30
+      create_score(guide_member, tier: :excellent, topics_replied: 44)
       described_class.rebuild!
 
-      expect(described_class.given_count_for(guide_member.id)).to be_nil
+      expect(described_class.given_count_for(guide_member.id)).to eq(30)
+    end
+
+    it "is built regardless of the chip setting, so toggling it needs no rebuild" do
+      SiteSetting.npn_critique_given_chip_enabled = false
+      create_score(guide_member, tier: :excellent, topics_replied: 12)
+      described_class.rebuild!
+      SiteSetting.npn_critique_given_chip_enabled = true
+
+      expect(described_class.given_count_for(guide_member.id)).to eq(10)
     end
   end
 
@@ -139,6 +149,7 @@ describe DiscourseNpnCritiqueEngagement::Recognition do
     end
 
     it "serializes the give-and-take count for everyone" do
+      SiteSetting.npn_critique_given_chip_enabled = true
       create_score(guide_member, tier: :healthy, topics_replied: 5)
       described_class.rebuild!
 
@@ -147,7 +158,17 @@ describe DiscourseNpnCritiqueEngagement::Recognition do
     end
 
     it "omits the give-and-take count below the floor" do
+      SiteSetting.npn_critique_given_chip_enabled = true
       create_score(guide_member, tier: :healthy, topics_replied: 1)
+      described_class.rebuild!
+
+      expect(
+        PostSerializer.new(post_record, scope: Guardian.new, root: false).as_json.keys,
+      ).not_to include(:npn_critique_given_recently)
+    end
+
+    it "omits the give-and-take count while the chip is switched off, which it is by default" do
+      create_score(guide_member, tier: :healthy, topics_replied: 5)
       described_class.rebuild!
 
       expect(
@@ -165,12 +186,13 @@ describe DiscourseNpnCritiqueEngagement::Recognition do
       expect(json[:npn_critique_recognition]).to eq("guide")
     end
 
-    it "serializes the give-and-take count publicly" do
-      create_score(guide_member, tier: :healthy, topics_replied: 5)
+    it "serializes the give-and-take count publicly, banded rather than exact" do
+      SiteSetting.npn_critique_given_chip_enabled = true
+      create_score(guide_member, tier: :healthy, topics_replied: 14)
       described_class.rebuild!
 
       json = UserCardSerializer.new(guide_member, scope: Guardian.new, root: false).as_json
-      expect(json[:npn_critique_given_recently]).to eq(5)
+      expect(json[:npn_critique_given_recently]).to eq(10)
     end
   end
 end

@@ -100,8 +100,8 @@ en:
           empty: "Your history will appear after your first month-end snapshot."
       given_chip:
         label:
-          one: "Gave %{count} critique recently"
-          other: "Gave %{count} critiques recently"
+          one: "Gave %{count}+ critique in the last %{days} days"
+          other: "Gave %{count}+ critiques in the last %{days} days"
       nudge:
         copy: "You've shared %{shared} photos and critiqued %{critiqued} recently. Image Critiques runs on give-and-take — consider visiting a few threads first. Members who critique regularly get more feedback on their own work."
         dismiss: "Dismiss reminder"

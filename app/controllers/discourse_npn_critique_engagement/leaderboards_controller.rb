@@ -102,7 +102,6 @@ module DiscourseNpnCritiqueEngagement
             username: snapshot.user.username,
             name: snapshot.user.name,
             avatar_template: snapshot.user.avatar_template,
-            tier: snapshot.public_tier,
           }
         end
     end

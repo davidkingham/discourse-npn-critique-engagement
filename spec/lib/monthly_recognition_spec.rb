@@ -157,6 +157,39 @@ describe DiscourseNpnCritiqueEngagement::MonthlyRecognition do
       expect(topic.first_post.raw).to include("@#{rising_star.username}")
     end
 
+    it "still posts and PMs on a site whose text customization predates the count coming out" do
+      # Saved without validation on purpose: core now rejects %{weighted} for
+      # these keys, but rows written before it left the default copy are still
+      # in the table and are still applied verbatim at lookup.
+      [
+        [
+          "npn_critique_engagement.highlights_topic.rising_line",
+          "Rising critic: @%{username}, %{weighted} weighted critiques.",
+        ],
+        [
+          "system_messages.npn_rising_critic.text_body_template",
+          "Congratulations @%{username}, %{weighted} weighted critiques in %{month}.",
+        ],
+      ].each do |key, value|
+        TranslationOverride.new(locale: "en", translation_key: key, value: value).save!(
+          validate: false,
+        )
+      end
+      TranslationOverride.reload_all_overrides!
+
+      described_class.record_due
+
+      topic = Topic.where(category_id: category.id).order(created_at: :desc).first
+      expect(topic.first_post.raw).to include("Rising critic: @#{rising_star.username}")
+      expect(
+        Topic
+          .private_messages
+          .joins(:topic_allowed_users)
+          .where(topic_allowed_users: { user_id: rising_star.id })
+          .count,
+      ).to eq(1)
+    end
+
     it "never awards the same member twice" do
       BadgeGranter.grant(DiscourseNpnCritiqueEngagement::Badges.rising, rising_star)
 

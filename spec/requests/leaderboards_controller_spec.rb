@@ -89,7 +89,7 @@ describe DiscourseNpnCritiqueEngagement::LeaderboardsController do
       expect(seasons.map { |season| season["username"] }).to eq(
         [runner_up.username, top_critic.username],
       )
-      expect(seasons.first.keys).not_to include("score", "weighted_replies")
+      expect(seasons.first.keys).to contain_exactly("month", "username", "name", "avatar_template")
     end
 
     it "lists the all-time most awarded critiques" do

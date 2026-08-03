@@ -448,8 +448,11 @@ plugins:
   # The public give-and-take count next to member names: how many threads
   # they critiqued in the rolling window. A count with no denominator can
   # celebrate but never shame — below the floor nothing shows at all.
+  # Off by default: this puts a previously private per-member number on every
+  # post, so an existing site should opt in deliberately rather than have it
+  # appear at upgrade.
   npn_critique_given_chip_enabled:
-    default: true
+    default: false
     client: true
 
   npn_critique_given_chip_min_count:

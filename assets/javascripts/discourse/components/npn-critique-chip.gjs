@@ -1,38 +1,30 @@
 import Component from "@glimmer/component";
 import { service } from "@ember/service";
 import dIcon from "discourse/ui-kit/helpers/d-icon";
+import {
+  recognitionClass,
+  recognitionIcon,
+  recognitionLabel,
+} from "../lib/recognition-chips";
 
-const ICONS = {
-  steward: "trophy",
-  guide: "award",
-  contributor: "medal",
-  rising: "seedling",
-};
-
-// Public recognition chip. Labels come from the badge-name settings so the
-// chip, the badge, and the hall of fame always agree.
+// Public recognition chip.
 export default class NpnCritiqueChip extends Component {
   @service siteSettings;
 
   get label() {
-    switch (this.args.level) {
-      case "steward":
-        return this.siteSettings.npn_critique_pillar_badge_name;
-      case "guide":
-        return this.siteSettings.npn_critique_supporter_badge_name;
-      case "rising":
-        return this.siteSettings.npn_critique_rising_badge_name;
-      default:
-        return this.siteSettings.npn_critique_contributor_badge_name;
-    }
+    return recognitionLabel(this.siteSettings, this.args.level);
   }
 
   get icon() {
-    return ICONS[this.args.level] ?? "medal";
+    return recognitionIcon(this.args.level);
+  }
+
+  get chipClass() {
+    return recognitionClass(this.args.level);
   }
 
   <template>
-    <span class="npn-critique-chip --{{@level}}" ...attributes>
+    <span class={{this.chipClass}} ...attributes>
       {{dIcon this.icon}}
       <span class="npn-critique-chip__label">{{this.label}}</span>
     </span>

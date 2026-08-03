@@ -1,12 +1,13 @@
 import { withPluginApi } from "discourse/lib/plugin-api";
-import { i18n } from "discourse-i18n";
-
-const ICONS = {
-  steward: "trophy",
-  guide: "award",
-  contributor: "medal",
-  rising: "seedling",
-};
+import {
+  GIVEN_CHIP_CLASS,
+  GIVEN_CHIP_ICON,
+  givenChipLabel,
+  givenChipText,
+  recognitionClass,
+  recognitionIcon,
+  recognitionLabel,
+} from "../lib/recognition-chips";
 
 // Renders the recognition chip and the give-and-take count beside poster
 // names. Positive signals only — the serializers never emit anything below
@@ -26,13 +27,6 @@ export default {
       return;
     }
 
-    const labels = {
-      steward: siteSettings.npn_critique_pillar_badge_name,
-      guide: siteSettings.npn_critique_supporter_badge_name,
-      contributor: siteSettings.npn_critique_contributor_badge_name,
-      rising: siteSettings.npn_critique_rising_badge_name,
-    };
-
     withPluginApi((api) => {
       if (chipsEnabled) {
         api.addTrackedPostProperties("npn_critique_recognition");
@@ -43,11 +37,13 @@ export default {
             return;
           }
 
+          const label = recognitionLabel(siteSettings, level);
+
           return {
-            icon: ICONS[level] ?? "medal",
-            text: labels[level],
-            title: labels[level],
-            className: `npn-critique-chip --${level}`,
+            icon: recognitionIcon(level),
+            text: label,
+            title: label,
+            className: recognitionClass(level),
           };
         });
       }
@@ -62,10 +58,10 @@ export default {
           }
 
           return {
-            icon: "hand-holding-heart",
-            text: String(count),
-            title: i18n("npn_critique_engagement.given_chip.label", { count }),
-            className: "npn-given-chip",
+            icon: GIVEN_CHIP_ICON,
+            text: givenChipText(count),
+            title: givenChipLabel(siteSettings, count),
+            className: GIVEN_CHIP_CLASS,
           };
         });
       }

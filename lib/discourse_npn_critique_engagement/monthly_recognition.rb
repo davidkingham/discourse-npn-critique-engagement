@@ -177,11 +177,17 @@ module DiscourseNpnCritiqueEngagement
       return if winner.nil?
 
       BadgeGranter.grant(badge, winner.user)
+      # weighted: is no longer in the default copy, but a site that customized
+      # this message before the count came out of it still has %{weighted} in
+      # its translation override. Overrides are applied verbatim, so dropping
+      # the argument would raise MissingInterpolationArgument, and the rescue
+      # below would swallow it into a log line nobody reads.
       SystemMessage.create_from_system_user(
         winner.user,
         :npn_rising_critic,
         month: @month.strftime("%B %Y"),
         badge_name: badge.name,
+        weighted: winner.weighted_replies,
       )
       PluginStore.set(
         PLUGIN_NAME,
@@ -259,11 +265,15 @@ module DiscourseNpnCritiqueEngagement
         )
       raw += awarded_critiques_section(month)
       if rising_winner
+        # weighted: is unused by the default copy and kept for the same reason
+        # as in award_rising_critic: an older translation override still
+        # referencing it would otherwise take the whole topic down.
         raw +=
           "\n\n" +
             I18n.t(
               "npn_critique_engagement.highlights_topic.rising_line",
               username: rising_winner.user.username,
+              weighted: rising_winner.weighted_replies,
             )
       end
 
