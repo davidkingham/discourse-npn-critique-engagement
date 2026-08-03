@@ -46,6 +46,7 @@ end
 #
 # Indexes
 #
-#  index_npn_critique_rolling_scores_on_score    (score)
-#  index_npn_critique_rolling_scores_on_user_id  (user_id) UNIQUE
+#  index_npn_critique_rolling_scores_on_score     (score)
+#  index_npn_critique_rolling_scores_on_user_id   (user_id) UNIQUE
+#  index_npn_critique_scores_on_replied_and_user  (topics_replied,user_id)
 #

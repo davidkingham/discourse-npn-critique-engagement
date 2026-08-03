@@ -6,11 +6,19 @@
 class AddTopicsRepliedIndexToNpnCritiqueRollingScores < ActiveRecord::Migration[8.0]
   disable_ddl_transaction!
 
+  # Named explicitly: the default for these two columns overruns Postgres's
+  # 63-character limit, and the hash Rails falls back to says nothing.
+  INDEX_NAME = "index_npn_critique_scores_on_replied_and_user"
+
   def change
     remove_index :npn_critique_rolling_scores,
                  %i[topics_replied user_id],
+                 name: INDEX_NAME,
                  algorithm: :concurrently,
                  if_exists: true
-    add_index :npn_critique_rolling_scores, %i[topics_replied user_id], algorithm: :concurrently
+    add_index :npn_critique_rolling_scores,
+              %i[topics_replied user_id],
+              name: INDEX_NAME,
+              algorithm: :concurrently
   end
 end
