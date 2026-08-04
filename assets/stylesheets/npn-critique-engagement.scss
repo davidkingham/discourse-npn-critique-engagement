@@ -24,15 +24,28 @@
 // the post — that is where the community sees who was honored — but the
 // picker offers ordinary reactions only.
 //
-// The picker lays its reactions out on a grid sized to the full list, so
-// hiding cells would leave empty columns behind. Flex instead, which
-// shrink-wraps to whatever is left.
+// The picker lays its reactions out on a grid whose column count is computed
+// from the full list, awards included, so hiding cells leaves empty ones
+// behind — six visible reactions in a grid sized for ten wrap 5 + 1. Flex
+// instead: it shrink-wraps to whatever is actually left, so the row stays
+// even at any number of reactions and nobody has to curate the set to a
+// multiple of the column count.
+//
+// The `.is-expanded` class is what carries this past the reactions plugin's
+// own two-class rule — equal specificity would lose the source-order
+// tiebreak, and the container only ever renders while expanded, so it costs
+// nothing. Same reasoning as the rosette sizing above.
 //
 // Award emojis are recognized by their `award-` name prefix, the same
-// convention the rosette sizing above relies on.
-.discourse-reactions-picker-container {
+// convention that sizing relies on.
+.discourse-reactions-picker.is-expanded .discourse-reactions-picker-container {
   display: flex;
   flex-wrap: wrap;
+
+  // Nothing constrains the width otherwise: the picker is `width:
+  // max-content`, so a long reaction list would run off in one row instead
+  // of wrapping. Roughly eight reactions, the cap the grid used to apply.
+  max-width: 20em;
 
   .pickable-reaction[data-reaction^="award-"] {
     display: none;
