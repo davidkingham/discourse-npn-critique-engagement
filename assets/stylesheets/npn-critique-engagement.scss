@@ -18,11 +18,36 @@
   height: 2em;
 }
 
-// The award button in the post menu, next to the reactions button. It sits
-// among quiet flat buttons, so the only emphasis it carries is the count and
-// the given state — enough to read as an honor, not enough to shout over the
-// reply button.
+// Awards now have their own button, so offering them a second time in the
+// reactions picker only splits the path and lets someone give one without
+// ever reading what it means. They stay visible in the reaction list under
+// the post — that is where the community sees who was honored — but the
+// picker offers ordinary reactions only.
+//
+// The picker lays its reactions out on a grid sized to the full list, so
+// hiding cells would leave empty columns behind. Flex instead, which
+// shrink-wraps to whatever is left.
+//
+// Award emojis are recognized by their `award-` name prefix, the same
+// convention the rosette sizing above relies on.
+.discourse-reactions-picker-container {
+  display: flex;
+  flex-wrap: wrap;
+
+  .pickable-reaction[data-reaction^="award-"] {
+    display: none;
+  }
+}
+
+// The award button in the post menu, to the left of the like button. It sits
+// among quiet flat buttons, so the only emphasis it carries is a slightly
+// larger rosette, the count, and the given state — enough to read as an
+// honor, not enough to shout over the reply button.
 .npn-award-button {
+  .d-icon {
+    font-size: var(--font-up-2);
+  }
+
   &__count {
     font-size: var(--font-down-1);
     font-weight: bold;
@@ -102,6 +127,12 @@
   &__description {
     font-size: var(--font-down-1);
     color: var(--primary-high);
+    white-space: normal;
+  }
+
+  &__owner-only {
+    font-size: var(--font-down-2);
+    color: var(--tertiary);
     white-space: normal;
   }
 

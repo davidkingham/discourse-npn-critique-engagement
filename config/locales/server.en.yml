@@ -16,6 +16,7 @@ en:
     npn_critique_owner_award_multiplier: "Multiplier when the award comes from the topic owner — the member whose work was critiqued."
     npn_critique_award_button_enabled: "Show an Award button next to the reactions button on critique replies, so awards are not buried in the reactions picker. Reactions still allow only one per person per post, so an award replaces that member's existing reaction."
     npn_critique_award_menu: "The awards the Award button offers, in display order, as `emoji:Label` pairs. Only emojis that are also enabled reactions are offered. Keep the legacy award names out of this list and in Npn critique award reactions, where they still count."
+    npn_critique_owner_only_awards: "Awards only the photographer can give, hidden from the award modal for everyone except the topic's author. Use this for awards that report a first-hand effect, which nobody else is in a position to confirm."
     npn_critique_top_critiques_count: "How many most-awarded critiques the monthly highlights topic and the hall of fame showcase."
     npn_critique_editors_pick_tag: "The tag the editors' pick review queue applies when staff make a pick."
     npn_critique_coverage_days: "How many days back the moderator dashboard looks for images still waiting for a substantive critique."

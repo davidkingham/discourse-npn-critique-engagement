@@ -20,13 +20,18 @@ export function awardReactionIds(siteSettings) {
   return settingList(siteSettings.npn_critique_award_reactions);
 }
 
-// The awards the button offers: [{ id, label, description }, ...] in setting
-// order. Anything the reactions plugin would reject is dropped here rather
-// than offered and failed on click.
+// The awards the button offers: [{ id, label, description, ownerOnly }, ...]
+// in setting order. Anything the reactions plugin would reject is dropped
+// here rather than offered and failed on click. Owner-only awards are
+// flagged rather than filtered, because whether to show them depends on who
+// is looking — see `isTopicOwner`.
 export function awardMenu(siteSettings) {
   const anyEmojiAllowed = siteSettings.discourse_reactions_allow_any_emoji;
   const enabled = new Set(
     settingList(siteSettings.discourse_reactions_enabled_reactions)
+  );
+  const ownerOnly = new Set(
+    settingList(siteSettings.npn_critique_owner_only_awards)
   );
 
   return settingList(siteSettings.npn_critique_award_menu)
@@ -42,9 +47,21 @@ export function awardMenu(siteSettings) {
         id,
         label: label || id,
         description: awardDescription(id),
+        ownerOnly: ownerOnly.has(id),
       };
     })
     .filter((award) => award.id && (anyEmojiAllowed || enabled.has(award.id)));
+}
+
+// Whether the viewer is the photographer whose work is being critiqued.
+// TopicViewSerializer carries the topic author as `user_id`; `created_by`
+// covers the paths where only the topic details are loaded.
+export function isTopicOwner(post, currentUser) {
+  if (!currentUser || !post?.topic) {
+    return false;
+  }
+  const ownerId = post.topic.user_id ?? post.topic.details?.created_by?.id;
+  return !!ownerId && ownerId === currentUser.id;
 }
 
 // The one-line explanation shown under an award's name. Translations exist

@@ -38,7 +38,7 @@ motivation, public recognition.
   gracefully when discourse-reactions is not installed.
 - **Award button** (`npn_critique_award_button_enabled`) — awards otherwise
   hide inside the reactions picker, behind a hover on a heart. This puts them
-  on their own post-menu button next to the reactions button, on critique
+  on their own post-menu button, to the left of the like button on critique
   replies, showing the post's award count. It opens a modal that names and
   explains each award (`npn_critique_award_menu` sets which are offered and in
   what order; `npn_critique_engagement.awards.descriptions` in
@@ -47,6 +47,18 @@ motivation, public recognition.
   award replaces that member's existing reaction — the modal says so before
   they click. Hidden on the viewer's own posts, on archived topics, and for
   anonymous visitors, since none of them can give an award.
+  - The awards are hidden from the reactions picker, so there is one path to
+    giving one and nobody hands out an honor without reading what it means.
+    Awards already given still show as rosettes in the reaction list under
+    the post, which is where the community sees who was honored. The hiding
+    rule is CSS keyed on the `award-` emoji name prefix, the same convention
+    the rosette sizing uses — an award emoji named otherwise stays in the
+    picker.
+  - `npn_critique_owner_only_awards` (default `award-helped-my-work`) hides
+    an award from everyone except the topic's author. Only the photographer
+    can say a critique changed how they work, so offering that award to a
+    passer-by would turn a first-hand report into a second opinion. The
+    modal tells the photographer why the award is theirs alone.
 - **Staff surface** — tier + score on the user card (staff only), an admin
   report with trend arrows and tier filtering, a category health dashboard,
   and the moderator tools under `/moderate` (see below).

@@ -52,7 +52,7 @@ plugins:
   # endorsements and outweigh plain likes. Legacy names are kept so awards
   # given before the custom emojis existed still count.
   npn_critique_award_reactions:
-    default: "award-thoughtful|award-processing|award-critique|award-helped-my-work|star2|control_knobs|trophy"
+    default: "award-thoughtful|award-processing-tip|award-critique|award-helped-my-work|star2|control_knobs|trophy"
     type: list
     client: true
 
@@ -89,9 +89,19 @@ plugins:
   # it. Each emoji can also carry a one-line explanation — see
   # npn_critique_engagement.awards.descriptions in client.en.yml.
   npn_critique_award_menu:
-    default: "award-thoughtful:Thoughtful response|award-processing:Valuable processing tip|award-critique:Valuable critique|award-helped-my-work:Helped my work"
+    default: "award-thoughtful:Thoughtful response|award-processing-tip:Valuable processing tip|award-critique:Valuable critique|award-helped-my-work:Helped my work"
     type: list
     list_type: simple
+    client: true
+
+  # Awards only the photographer can give, because only they can say it. No
+  # one else knows whether a critique changed how they edit their own photo,
+  # so offering "Helped my work" to a passer-by would turn a first-hand
+  # report into a second opinion. Names listed here are hidden from the
+  # award modal for everyone except the topic's author.
+  npn_critique_owner_only_awards:
+    default: "award-helped-my-work"
+    type: list
     client: true
 
   npn_critique_top_critiques_count:
@@ -452,7 +462,7 @@ plugins:
     default: false
 
   npn_critique_award_badge_map:
-    default: "award-thoughtful=Thoughtful Response|award-processing=Valuable Processing Tip|award-critique=Valuable Critique|award-helped-my-work=Helped My Work|star2=Thoughtful Response|control_knobs=Valuable Processing Tip|trophy=Valuable Critique"
+    default: "award-thoughtful=Thoughtful Response|award-processing-tip=Valuable Processing Tip|award-critique=Valuable Critique|award-helped-my-work=Helped My Work|star2=Thoughtful Response|control_knobs=Valuable Processing Tip|trophy=Valuable Critique"
     type: list
 
   npn_critique_award_badge_min_reactions:

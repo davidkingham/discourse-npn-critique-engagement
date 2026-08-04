@@ -64,7 +64,9 @@ export default {
             return;
           }
 
-          dag.add("npn-award", NpnAwardButton, { after: [buttonKeys.LIKE] });
+          // Left of the like button, so the honor reads first rather than
+          // trailing the everyday reaction.
+          dag.add("npn-award", NpnAwardButton, { before: [buttonKeys.LIKE] });
         }
       );
     });

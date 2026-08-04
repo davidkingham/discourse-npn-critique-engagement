@@ -6,16 +6,25 @@ import { i18n } from "discourse-i18n";
 import NpnAwardButton from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-award-button";
 import NpnAwardModal from "discourse/plugins/discourse-npn-critique-engagement/discourse/components/npn-award-modal";
 
-const AWARD_REACTIONS = "award-thoughtful|award-critique|trophy";
+const AWARD_REACTIONS =
+  "award-thoughtful|award-critique|award-helped-my-work|trophy";
 const AWARD_MENU =
-  "award-thoughtful:Thoughtful response|award-critique:Valuable critique";
-const ENABLED_REACTIONS = "heart|award-thoughtful|award-critique";
+  "award-thoughtful:Thoughtful response|award-critique:Valuable critique|award-helped-my-work:Helped my work";
+const ENABLED_REACTIONS =
+  "heart|award-thoughtful|award-critique|award-helped-my-work";
+
+// The photographer whose work is being critiqued. Anyone else is a
+// passer-by as far as the owner-only awards are concerned. The rendering
+// test's current user is built without an id, so tests that care about
+// ownership give it one.
+const VIEWER_ID = 12;
+const OTHER_MEMBER_ID = 777;
 
 function postWith(attrs = {}) {
   return {
     id: 42,
     yours: false,
-    topic: { archived: false },
+    topic: { archived: false, user_id: OTHER_MEMBER_ID },
     reactions: [],
     current_user_reaction: null,
     likeAction: { canToggle: true },
@@ -26,6 +35,7 @@ function postWith(attrs = {}) {
 function applyAwardSettings(siteSettings) {
   siteSettings.npn_critique_award_reactions = AWARD_REACTIONS;
   siteSettings.npn_critique_award_menu = AWARD_MENU;
+  siteSettings.npn_critique_owner_only_awards = "award-helped-my-work";
   siteSettings.discourse_reactions_enabled_reactions = ENABLED_REACTIONS;
   siteSettings.discourse_reactions_allow_any_emoji = false;
 }
@@ -107,6 +117,7 @@ module(
 
     hooks.beforeEach(function () {
       applyAwardSettings(this.siteSettings);
+      this.currentUser.set("id", VIEWER_ID);
       // No app shell in a rendering test, so give the modal somewhere to
       // render rather than silently rendering nothing.
       this.owner.lookup("service:modal").containerElement =
@@ -130,6 +141,9 @@ module(
       assert
         .dom("[data-award='award-critique'] .npn-award-modal__label")
         .hasText("Valuable critique");
+      assert
+        .dom("[data-award='award-helped-my-work']")
+        .doesNotExist("an owner-only award is hidden from a passer-by");
       // The explanations are what the modal exists for, and they come from
       // the locale file keyed by emoji name. A silent lookup miss would
       // leave the modal a prettier version of the picker it replaced.
@@ -160,6 +174,50 @@ module(
       assert
         .dom("[data-award='award-invented'] .npn-award-modal__description")
         .doesNotExist();
+    });
+
+    test("offers the owner-only award to the photographer, and says why", async function (assert) {
+      const model = {
+        post: postWith({
+          topic: { archived: false, user_id: VIEWER_ID },
+        }),
+      };
+      const closeModal = () => {};
+
+      await render(
+        <template>
+          <NpnAwardModal @model={{model}} @closeModal={{closeModal}} />
+        </template>
+      );
+
+      assert.dom(".npn-award-modal__award").exists({ count: 3 });
+      assert.dom("[data-award='award-helped-my-work']").exists();
+      assert
+        .dom("[data-award='award-helped-my-work'] .npn-award-modal__owner-only")
+        .exists("the photographer is told why this one is theirs alone");
+      assert
+        .dom("[data-award='award-critique'] .npn-award-modal__owner-only")
+        .doesNotExist();
+    });
+
+    test("reads the topic owner from created_by when user_id is absent", async function (assert) {
+      const model = {
+        post: postWith({
+          topic: {
+            archived: false,
+            details: { created_by: { id: VIEWER_ID } },
+          },
+        }),
+      };
+      const closeModal = () => {};
+
+      await render(
+        <template>
+          <NpnAwardModal @model={{model}} @closeModal={{closeModal}} />
+        </template>
+      );
+
+      assert.dom("[data-award='award-helped-my-work']").exists();
     });
 
     test("warns that an award replaces an existing reaction", async function (assert) {

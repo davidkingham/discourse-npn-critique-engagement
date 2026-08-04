@@ -16,6 +16,7 @@ import {
   awardMenu,
   awardReactionIds,
   currentAwardId,
+  isTopicOwner,
   reactionCount,
 } from "../lib/awards";
 
@@ -27,6 +28,7 @@ import {
 // awards mean.
 export default class NpnAwardModal extends Component {
   @service appEvents;
+  @service currentUser;
   @service siteSettings;
 
   @tracked saving = false;
@@ -40,33 +42,40 @@ export default class NpnAwardModal extends Component {
     return awardReactionIds(this.siteSettings);
   }
 
+  get isOwner() {
+    return isTopicOwner(this.post, this.currentUser);
+  }
+
   get awards() {
     const given = currentAwardId(this.post, this.awardIds);
     const canAct = this.canAct;
+    const isOwner = this.isOwner;
 
-    return awardMenu(this.siteSettings).map((award) => {
-      const isGiven = award.id === given;
-      let title;
+    return awardMenu(this.siteSettings)
+      .filter((award) => !award.ownerOnly || isOwner)
+      .map((award) => {
+        const isGiven = award.id === given;
+        let title;
 
-      if (!canAct) {
-        title = i18n("npn_critique_engagement.awards.modal.locked");
-      } else if (isGiven) {
-        title = i18n("npn_critique_engagement.awards.modal.remove", {
-          award: award.label,
-        });
-      } else {
-        title = i18n("npn_critique_engagement.awards.modal.give", {
-          award: award.label,
-        });
-      }
+        if (!canAct) {
+          title = i18n("npn_critique_engagement.awards.modal.locked");
+        } else if (isGiven) {
+          title = i18n("npn_critique_engagement.awards.modal.remove", {
+            award: award.label,
+          });
+        } else {
+          title = i18n("npn_critique_engagement.awards.modal.give", {
+            award: award.label,
+          });
+        }
 
-      return {
-        ...award,
-        title,
-        given: isGiven,
-        count: reactionCount(this.post, award.id),
-      };
-    });
+        return {
+          ...award,
+          title,
+          given: isGiven,
+          count: reactionCount(this.post, award.id),
+        };
+      });
   }
 
   // Reactions allow one reaction per member per post, so an award takes the
@@ -180,6 +189,11 @@ export default class NpnAwardModal extends Component {
                     <span
                       class="npn-award-modal__description"
                     >{{award.description}}</span>
+                  {{/if}}
+                  {{#if award.ownerOnly}}
+                    <span class="npn-award-modal__owner-only">
+                      {{i18n "npn_critique_engagement.awards.modal.owner_only"}}
+                    </span>
                   {{/if}}
                 </span>
                 <span class="npn-award-modal__state">

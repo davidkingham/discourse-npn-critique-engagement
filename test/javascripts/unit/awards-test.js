@@ -4,6 +4,7 @@ import {
   awardMenu,
   awardReactionIds,
   currentAwardId,
+  isTopicOwner,
   reactionCount,
 } from "discourse/plugins/discourse-npn-critique-engagement/discourse/lib/awards";
 
@@ -15,6 +16,7 @@ const SETTINGS = {
   npn_critique_award_reactions: "award-thoughtful|award-critique|star2|trophy",
   npn_critique_award_menu:
     "award-thoughtful:Thoughtful response|award-critique:Valuable critique",
+  npn_critique_owner_only_awards: "award-critique",
   discourse_reactions_enabled_reactions:
     "heart|award-thoughtful|award-critique",
   discourse_reactions_allow_any_emoji: false,
@@ -42,6 +44,28 @@ module("Unit | NPN Critique Engagement | awards", function () {
         ["award-critique", "Valuable critique"],
       ]
     );
+  });
+
+  test("an owner-only award is flagged, not filtered, so callers can decide", function (assert) {
+    const menu = awardMenu(settings());
+
+    assert.false(menu[0].ownerOnly, "award-thoughtful is open to anyone");
+    assert.true(menu[1].ownerOnly, "award-critique is listed as owner-only");
+  });
+
+  test("the topic owner is read from user_id, then created_by", function (assert) {
+    const me = { id: 5 };
+
+    assert.true(isTopicOwner({ topic: { user_id: 5 } }, me));
+    assert.false(isTopicOwner({ topic: { user_id: 6 } }, me));
+    assert.true(
+      isTopicOwner({ topic: { details: { created_by: { id: 5 } } } }, me)
+    );
+    assert.false(
+      isTopicOwner({ topic: { details: { created_by: { id: 6 } } } }, me)
+    );
+    assert.false(isTopicOwner({ topic: {} }, me), "an unknown owner is nobody");
+    assert.false(isTopicOwner({ topic: { user_id: 5 } }, null), "anonymous");
   });
 
   test("an award that is not an enabled reaction is dropped, not offered", function (assert) {

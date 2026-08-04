@@ -29,9 +29,10 @@ en:
           locked: "Your reaction on this post can no longer be changed."
           give: "Give this award: %{award}"
           remove: "Remove this award: %{award}"
+          owner_only: "Only you can give this one, because only you can say it."
         descriptions:
           award-thoughtful: "For a reply that clearly took real time and care to write."
-          award-processing: "For a specific editing or processing suggestion you can act on."
+          award-processing-tip: "For a specific editing or processing suggestion you can act on."
           award-critique: "For a critique that named what was working, what was not, and why."
           award-helped-my-work: "For a critique that changed how you shoot or edit."
       feed:
