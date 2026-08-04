@@ -54,6 +54,7 @@ plugins:
   npn_critique_award_reactions:
     default: "award-thoughtful|award-processing|award-critique|award-helped-my-work|star2|control_knobs|trophy"
     type: list
+    client: true
 
   npn_critique_award_bonus:
     default: 0.5
@@ -66,6 +67,32 @@ plugins:
   npn_critique_owner_award_multiplier:
     default: 2.0
     type: float
+
+  # --- Award button ---------------------------------------------------------
+  # Awards live in the reactions picker, which buries them behind a hover on
+  # a heart. This puts them on their own post-menu button, next to the
+  # reactions button, on critique replies.
+  #
+  # Reactions allow one reaction per member per post, so an award still
+  # replaces whatever reaction that member already left. The button cannot
+  # change that; it only makes the awards easier to find and to understand.
+
+  npn_critique_award_button_enabled:
+    default: true
+    client: true
+
+  # The awards the button offers, in display order, as `emoji:Label` pairs.
+  # Deliberately separate from npn_critique_award_reactions: that setting is
+  # what *counts* and still carries the legacy emoji names, which should
+  # never be offered as a new award. An entry whose emoji is not an enabled
+  # reaction is skipped rather than offered, because the server would reject
+  # it. Each emoji can also carry a one-line explanation — see
+  # npn_critique_engagement.awards.descriptions in client.en.yml.
+  npn_critique_award_menu:
+    default: "award-thoughtful:Thoughtful response|award-processing:Valuable processing tip|award-critique:Valuable critique|award-helped-my-work:Helped my work"
+    type: list
+    list_type: simple
+    client: true
 
   npn_critique_top_critiques_count:
     default: 10

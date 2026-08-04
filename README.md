@@ -36,6 +36,17 @@ motivation, public recognition.
   with extra weight when the award comes from the topic owner. Awards
   received show on the private impact panel and the admin report. Degrades
   gracefully when discourse-reactions is not installed.
+- **Award button** (`npn_critique_award_button_enabled`) — awards otherwise
+  hide inside the reactions picker, behind a hover on a heart. This puts them
+  on their own post-menu button next to the reactions button, on critique
+  replies, showing the post's award count. It opens a modal that names and
+  explains each award (`npn_critique_award_menu` sets which are offered and in
+  what order; `npn_critique_engagement.awards.descriptions` in
+  `client.en.yml` carries the explanations, keyed by emoji name). Awards are
+  still reactions, and reactions allow one per member per post, so giving an
+  award replaces that member's existing reaction — the modal says so before
+  they click. Hidden on the viewer's own posts, on archived topics, and for
+  anonymous visitors, since none of them can give an award.
 - **Staff surface** — tier + score on the user card (staff only), an admin
   report with trend arrows and tier filtering, a category health dashboard,
   and the moderator tools under `/moderate` (see below).

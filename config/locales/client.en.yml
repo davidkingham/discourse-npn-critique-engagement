@@ -13,6 +13,27 @@ en:
         new_member: "New member"
       user_card:
         label: "Critique engagement (staff only)"
+      # The award button next to the reactions button on critique replies.
+      # The descriptions are keyed by the award's emoji name, so an award an
+      # admin adds to npn_critique_award_menu simply shows its label alone
+      # rather than a missing-translation string.
+      awards:
+        button:
+          label: "Award"
+          title: "Give an award"
+          title_given: "Change or remove your award"
+        modal:
+          title: "Give an award"
+          intro: "Awards mark a critique that genuinely moved someone's work forward. Pick the one that fits."
+          replaces_reaction: "You have already reacted to this post. Only one reaction is kept per person, so an award will replace it."
+          locked: "Your reaction on this post can no longer be changed."
+          give: "Give this award: %{award}"
+          remove: "Remove this award: %{award}"
+        descriptions:
+          award-thoughtful: "For a reply that clearly took real time and care to write."
+          award-processing: "For a specific editing or processing suggestion you can act on."
+          award-critique: "For a critique that named what was working, what was not, and why."
+          award-helped-my-work: "For a critique that changed how you shoot or edit."
       feed:
         replies:
           one: "%{count} reply"
