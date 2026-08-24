@@ -78,8 +78,26 @@ motivation, public recognition.
 
 All staff-only. The dashboard at `/moderate` gathers everything a moderator
 triages: images still waiting for a substantive critique (new members first),
-posts in the New Members category that need more replies, this week's pick
-board, and the top of the outreach and welcome queues.
+posts in the New Members category that need more replies, threads reworked
+after critique, this week's pick board, and the top of the outreach and
+welcome queues.
+
+- **The pick board shows every genre, every week** — the full genre
+  vocabulary, not just the genres posted to lately, so a quiet genre reads
+  as an empty slot instead of vanishing. Each row also carries the genre's
+  entry count since its last pick and when that pick was made, linking
+  straight into the queue's since-last-pick view — the group a moderator
+  judging on an accumulate cadence actually considers.
+- **Accumulate genres** (`npn_critique_accumulate_genres`, default `astro`)
+  run on that cadence officially: no weekly "no pick yet" nag, just the pool
+  since the last pick, flagged "Pool ready to judge" once it reaches
+  `npn_critique_accumulate_min_entries`. The cadence is a default, not a
+  gate — an outstanding entry can still be picked the week it appears.
+- **Reworked after critique** — threads whose photographer posted an updated
+  image after someone critiqued the original. The loop closing is the most
+  on-mission thing the community produces and is invisible to every list
+  keyed on topic creation date, so it gets its own panel, newest rework
+  first, linking to the rework post itself. Already-picked threads drop off.
 
 ### Editors' picks (`/moderate/editors-picks`)
 
@@ -103,6 +121,14 @@ engagement standing beside them.
   browser back button, bookmarks, and links shared between moderators land on
   the same view. The genre dropdown always offers the full genre vocabulary,
   even genres with no posts that week.
+- **A since-last-pick window** (`?tag=astro&window=since_last_pick`) shows a
+  genre's whole pool since its slot was last filled instead of one week:
+  everything posted since the pick was made, plus older threads whose author
+  posted a reworked image since (marked on the card, linking to the rework).
+  This is the view for accumulate-cadence genres, where "this week" is
+  usually empty and the judgable group is everything since the last pick. A
+  genre never picked falls back to the scoring window. The dashboard's
+  per-genre entry counts link here and count the same pool.
 - **Picking** declares which genre the pick fills (tags overlap; the
   declaration doesn't) and can include a public reason that becomes the pick
   note's body. With `npn_critique_pick_finalize_minutes` set, picks are

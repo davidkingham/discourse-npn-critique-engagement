@@ -23,6 +23,8 @@ en:
     npn_critique_coverage_excluded_tags: "Topics with these tags don't need critique coverage. Weekly-challenge announcement topics are always excluded; challenge entries are covered."
     npn_critique_coverage_excluded_title_prefixes: "Topics whose title starts with any of these don't need critique coverage — catches announcement topics created before the weekly-challenge plugin marked them."
     npn_critique_pick_excluded_tags: "Tags that aren't pick genres and stay off the weekly pick status board (style and attribute tags)."
+    npn_critique_accumulate_genres: "Genres judged on an accumulate-and-judge cadence instead of weekly: the pick board shows entries since the genre's last pick rather than a weekly open slot. For genres too quiet to fill a slot every week."
+    npn_critique_accumulate_min_entries: "How many entries make an accumulate genre's pool worth judging. At this count the pick board flags the genre ready."
     npn_fair_feed_enabled: "Replace the homepage with the composed feed: editors' picks, work waiting for a first critique, new-member intros, reserved conversation slots, and photographers you haven't met."
     npn_fair_feed_anonymous: "Show the composed homepage to logged-out visitors too. Off by default so crawlers and first-time visitors keep Latest."
     npn_fair_feed_allowed_groups: "Who gets the composed homepage. Leave empty for every logged-in member (the full rollout). Set a group to beta-test in production — only those members see the feed, everyone else keeps Latest, and logged-out visitors are excluded regardless of the anonymous setting."

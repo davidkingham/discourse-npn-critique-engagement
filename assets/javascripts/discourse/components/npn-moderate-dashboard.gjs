@@ -208,6 +208,67 @@ export default class NpnModerateDashboard extends Component {
           {{/if}}
         </section>
 
+        <section class="npn-moderate__panel npn-moderate__reworks">
+          <h2>
+            {{i18n "npn_critique_engagement.moderate.reworks_title"}}
+            <span class="npn-moderate__count">{{@model.reworks.total}}</span>
+          </h2>
+          <p class="npn-moderate__hint">
+            {{i18n "npn_critique_engagement.moderate.reworks_hint"}}
+          </p>
+          {{#if @model.reworks.topics.length}}
+            <ul class="npn-moderate__coverage-list">
+              {{#each @model.reworks.topics as |topic|}}
+                <li class="npn-moderate__coverage-row">
+                  <a class="npn-moderate__thumb-link" href={{topic.url}}>
+                    {{#if topic.image_url}}
+                      <img
+                        class="npn-moderate__thumb"
+                        src={{topic.image_url}}
+                        alt=""
+                        loading="lazy"
+                      />
+                    {{else}}
+                      <div class="npn-moderate__thumb --placeholder">
+                        {{dIcon "arrows-rotate"}}
+                      </div>
+                    {{/if}}
+                  </a>
+                  <div class="npn-moderate__coverage-body">
+                    <a class="npn-moderate__topic" href={{topic.url}}>
+                      {{topic.title}}
+                    </a>
+                    <div class="npn-moderate__coverage-meta">
+                      <a
+                        class="npn-moderate__member"
+                        href={{userPath topic.username}}
+                        data-user-card={{topic.username}}
+                      >
+                        {{dBoundAvatarTemplate topic.avatar_template "tiny"}}
+                        <span>{{topic.username}}</span>
+                      </a>
+                      {{#each topic.tags as |tag|}}
+                        <a class="npn-moderate__tag" href={{tagUrl tag}}>
+                          {{tag}}
+                        </a>
+                      {{/each}}
+                      <span class="npn-moderate__reworked">
+                        {{dIcon "arrows-rotate"}}
+                        {{i18n "npn_critique_engagement.moderate.reworked"}}
+                        {{dFormatDate topic.reworked_at format="tiny"}}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              {{/each}}
+            </ul>
+          {{else}}
+            <p class="npn-moderate__empty">
+              {{i18n "npn_critique_engagement.moderate.reworks_empty"}}
+            </p>
+          {{/if}}
+        </section>
+
         <div class="npn-moderate__side">
           <section class="npn-moderate__panel npn-moderate__picks">
             <h2>{{i18n "npn_critique_engagement.moderate.picks_title"}}</h2>
@@ -218,48 +279,82 @@ export default class NpnModerateDashboard extends Component {
               <ul class="npn-moderate__pick-list">
                 {{#each this.pickStatus as |genre|}}
                   <li class="npn-moderate__pick-row">
+                    <div class="npn-moderate__pick-main">
+                      <LinkTo
+                        @route="critique-editors-picks"
+                        @query={{hash tag=genre.tag}}
+                        class="npn-moderate__pick-tag"
+                      >
+                        {{genre.tag}}
+                      </LinkTo>
+                      {{#if genre.picked}}
+                        <a
+                          class="npn-moderate__pick-done"
+                          href={{genre.topic_url}}
+                        >
+                          {{dIcon "check"}}
+                          {{i18n
+                            "npn_critique_engagement.moderate.picked_by"
+                            username=genre.picked_by
+                          }}
+                        </a>
+                      {{else if genre.accumulate}}
+                        {{#if genre.ready}}
+                          <span class="npn-moderate__pool-ready">
+                            {{dIcon "star"}}
+                            {{i18n
+                              "npn_critique_engagement.moderate.pool_ready"
+                            }}
+                          </span>
+                        {{else}}
+                          <span class="npn-moderate__pick-accumulating">
+                            {{i18n
+                              "npn_critique_engagement.moderate.accumulating"
+                            }}
+                          </span>
+                        {{/if}}
+                      {{else if genre.no_pick}}
+                        <span class="npn-moderate__pick-none">
+                          {{dIcon "ban"}}
+                          {{i18n
+                            "npn_critique_engagement.moderate.no_pick_by"
+                            username=genre.no_pick.username
+                          }}
+                        </span>
+                        <DButton
+                          @action={{fn this.undoNoPick genre}}
+                          @icon="arrow-rotate-left"
+                          @ariaLabel="npn_critique_engagement.moderate.no_pick_undo"
+                          class="btn-flat btn-small npn-moderate__no-pick-undo"
+                        />
+                      {{else}}
+                        <span class="npn-moderate__pick-open">
+                          {{i18n "npn_critique_engagement.moderate.pick_open"}}
+                        </span>
+                        <DButton
+                          @action={{fn this.declareNoPick genre}}
+                          @label="npn_critique_engagement.moderate.no_pick"
+                          class="btn-flat btn-small npn-moderate__no-pick-button"
+                        />
+                      {{/if}}
+                    </div>
                     <LinkTo
                       @route="critique-editors-picks"
-                      @query={{hash tag=genre.tag}}
-                      class="npn-moderate__pick-tag"
+                      @query={{hash tag=genre.tag window="since_last_pick"}}
+                      class="npn-moderate__pick-since"
                     >
-                      {{genre.tag}}
+                      {{i18n
+                        "npn_critique_engagement.moderate.since_count"
+                        count=genre.since_count
+                      }}
+                      ·
+                      {{#if genre.last_pick_at}}
+                        {{i18n "npn_critique_engagement.moderate.last_pick"}}
+                        {{dFormatDate genre.last_pick_at format="tiny"}}
+                      {{else}}
+                        {{i18n "npn_critique_engagement.moderate.never_picked"}}
+                      {{/if}}
                     </LinkTo>
-                    {{#if genre.picked}}
-                      <a
-                        class="npn-moderate__pick-done"
-                        href={{genre.topic_url}}
-                      >
-                        {{dIcon "check"}}
-                        {{i18n
-                          "npn_critique_engagement.moderate.picked_by"
-                          username=genre.picked_by
-                        }}
-                      </a>
-                    {{else if genre.no_pick}}
-                      <span class="npn-moderate__pick-none">
-                        {{dIcon "ban"}}
-                        {{i18n
-                          "npn_critique_engagement.moderate.no_pick_by"
-                          username=genre.no_pick.username
-                        }}
-                      </span>
-                      <DButton
-                        @action={{fn this.undoNoPick genre}}
-                        @icon="arrow-rotate-left"
-                        @ariaLabel="npn_critique_engagement.moderate.no_pick_undo"
-                        class="btn-flat btn-small npn-moderate__no-pick-undo"
-                      />
-                    {{else}}
-                      <span class="npn-moderate__pick-open">
-                        {{i18n "npn_critique_engagement.moderate.pick_open"}}
-                      </span>
-                      <DButton
-                        @action={{fn this.declareNoPick genre}}
-                        @label="npn_critique_engagement.moderate.no_pick"
-                        class="btn-flat btn-small npn-moderate__no-pick-button"
-                      />
-                    {{/if}}
                   </li>
                 {{/each}}
               </ul>

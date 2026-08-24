@@ -57,6 +57,7 @@ after_initialize do
   require_relative "lib/discourse_npn_critique_engagement/genre_tags"
   require_relative "lib/discourse_npn_critique_engagement/pick_week"
   require_relative "lib/discourse_npn_critique_engagement/editors_pick"
+  require_relative "lib/discourse_npn_critique_engagement/reworks"
   require_relative "lib/discourse_npn_critique_engagement/monthly_recognition"
   require_relative "app/models/discourse_npn_critique_engagement/score"
   require_relative "app/models/discourse_npn_critique_engagement/monthly_snapshot"

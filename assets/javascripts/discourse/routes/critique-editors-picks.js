@@ -11,6 +11,7 @@ export default class CritiqueEditorsPicksRoute extends DiscourseRoute {
   queryParams = {
     tag: { refreshModel: true },
     week: { refreshModel: true },
+    window: { refreshModel: true },
   };
 
   beforeModel() {
@@ -29,6 +30,10 @@ export default class CritiqueEditorsPicksRoute extends DiscourseRoute {
     }
     if (params.tag) {
       data.tag = params.tag;
+    }
+    // The since-last-pick window only means something for one genre.
+    if (params.window && params.tag) {
+      data.window = params.window;
     }
     return ajax("/moderate/editors-picks.json", { data });
   }

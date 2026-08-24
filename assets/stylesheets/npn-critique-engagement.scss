@@ -668,8 +668,45 @@
 
   &__pick-row {
     display: flex;
+    flex-direction: column;
+    gap: 0.15em;
+  }
+
+  &__pick-main {
+    display: flex;
     align-items: center;
     gap: 0.75em;
+  }
+
+  &__pick-since {
+    font-size: var(--font-down-1);
+    color: var(--primary-high);
+  }
+
+  &__pick-accumulating {
+    color: var(--primary-medium);
+    font-style: italic;
+  }
+
+  &__pool-ready {
+    color: var(--tertiary);
+    font-weight: bold;
+
+    .d-icon {
+      color: currentcolor;
+    }
+  }
+
+  &__reworked {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    color: var(--success);
+    font-size: var(--font-down-1);
+
+    .d-icon {
+      color: currentcolor;
+    }
   }
 
   &__pick-tag {
@@ -815,6 +852,18 @@
   &__meta {
     font-size: var(--font-down-1);
     color: var(--primary-high);
+  }
+
+  &__reworked {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    font-size: var(--font-down-1);
+    color: var(--success);
+
+    .d-icon {
+      color: currentcolor;
+    }
   }
 
   &__picks-history {

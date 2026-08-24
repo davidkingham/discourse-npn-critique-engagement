@@ -208,6 +208,62 @@ describe DiscourseNpnCritiqueEngagement::EditorsPicksController do
     end
   end
 
+  describe "#show with window=since_last_pick" do
+    before do
+      sign_in(moderator)
+      SiteSetting.npn_critique_pick_finalize_minutes = 0
+    end
+
+    it "shows the genre's whole pool since its last pick, including reworked older threads" do
+      picked = make_image_topic(engaged_poster, landscape_tag, created_at: 20.days.ago)
+      before_pick = make_image_topic(quiet_poster, landscape_tag, created_at: 15.days.ago)
+      reworked = make_image_topic(engaged_poster, landscape_tag, created_at: 12.days.ago)
+      Fabricate(:post, topic: reworked, user: quiet_poster, created_at: 11.days.ago)
+      post "/moderate/editors-picks/pick.json", params: { topic_id: picked.id, genre: "landscape" }
+      pick_at = 10.days.ago
+      Post.where(topic_id: picked.id, action_code: "npn_editors_pick").update_all(
+        created_at: pick_at,
+      )
+      rework = Fabricate(:post, topic: reworked, user: engaged_poster, created_at: 2.days.ago)
+      rework.update_columns(image_upload_id: Fabricate(:upload).id)
+      fresh = make_image_topic(quiet_poster, landscape_tag, created_at: 3.days.ago)
+      make_image_topic(quiet_poster, wildlife_tag, created_at: 3.days.ago)
+
+      get "/moderate/editors-picks.json", params: { window: "since_last_pick", tag: "landscape" }
+
+      expect(response.status).to eq(200)
+      body = response.parsed_body
+      expect(body["window"]).to eq("since_last_pick")
+      expect(Time.zone.parse(body["since"])).to be_within(1.minute).of(pick_at)
+      ids = body["topics"].map { |topic| topic["id"] }
+      expect(ids).to contain_exactly(reworked.id, fresh.id)
+      expect(ids).not_to include(before_pick.id)
+      reworked_payload = body["topics"].find { |topic| topic["id"] == reworked.id }
+      expect(reworked_payload["reworked_at"]).to be_present
+      expect(reworked_payload["rework_url"]).to eq("#{reworked.relative_url}/#{rework.post_number}")
+    end
+
+    it "falls back to the scoring window when the genre was never picked" do
+      inside = make_image_topic(engaged_poster, landscape_tag, created_at: 30.days.ago)
+      make_image_topic(
+        quiet_poster,
+        landscape_tag,
+        created_at: (SiteSetting.npn_critique_window_days + 10).days.ago,
+      )
+
+      get "/moderate/editors-picks.json", params: { window: "since_last_pick", tag: "landscape" }
+
+      expect(response.parsed_body["topics"].map { |topic| topic["id"] }).to eq([inside.id])
+    end
+
+    it "ignores the window without a tag and serves the weekly view" do
+      get "/moderate/editors-picks.json", params: { window: "since_last_pick" }
+
+      expect(response.parsed_body["window"]).to eq("week")
+      expect(response.parsed_body["week_start"]).to be_present
+    end
+  end
+
   describe "#pick" do
     fab!(:topic) { make_image_topic(engaged_poster, landscape_tag, created_at: previous_week_time) }
 

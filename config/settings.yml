@@ -104,6 +104,23 @@ plugins:
     type: list
     client: true
 
+  # Genres too quiet for a weekly pick. A weekly slot on the pick board
+  # turns a genre with one entry a month into a standing nag; these genres
+  # run on an accumulate-and-judge cadence instead — the board shows how
+  # many entries have arrived since the genre's last pick and flags the pool
+  # once it's worth judging. An outstanding entry can still be picked the
+  # week it appears; the cadence is a default, not a gate.
+  npn_critique_accumulate_genres:
+    default: "astro"
+    type: tag_list
+
+  # How many entries make an accumulate genre's pool worth judging. Below
+  # this the board shows a quiet count; at or above it the row is flagged
+  # ready.
+  npn_critique_accumulate_min_entries:
+    default: 3
+    min: 1
+
   npn_critique_top_critiques_count:
     default: 10
     min: 1

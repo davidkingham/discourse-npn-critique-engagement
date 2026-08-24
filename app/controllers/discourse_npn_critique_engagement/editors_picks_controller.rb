@@ -20,24 +20,33 @@ module DiscourseNpnCritiqueEngagement
     REASON_MAX_LENGTH = 1000
 
     # GET /critique-engagement/editors-picks?week=YYYY-MM-DD&tag=landscape
+    # With window=since_last_pick (requires a tag), the queue shows the
+    # genre's whole pool since its last pick instead of one week — the view
+    # for quiet genres judged on the accumulate cadence, where "this week"
+    # is usually empty and the group worth judging is everything that has
+    # arrived since the slot was last filled.
     def show
       respond_to do |format|
         format.html { render html: nil, layout: true }
         format.json do
-          week_start = requested_week
-          topics = week_topics(week_start)
-          tags = GenreTags.all
-          topics =
-            topics.select { |topic| topic.tags.map(&:name).include?(params[:tag]) } if params[
-            :tag
-          ].present?
+          if since_window?
+            render json: since_payload
+          else
+            week_start = requested_week
+            topics = week_topics(week_start)
+            topics =
+              topics.select { |topic| topic.tags.map(&:name).include?(params[:tag]) } if params[
+              :tag
+            ].present?
 
-          render json: {
-                   week_start: week_start,
-                   tag: params[:tag].presence,
-                   tags: tags,
-                   topics: serialize_topics(topics),
-                 }
+            render json: {
+                     window: "week",
+                     week_start: week_start,
+                     tag: params[:tag].presence,
+                     tags: GenreTags.all,
+                     topics: serialize_topics(topics),
+                   }
+          end
         end
       end
     end
@@ -163,6 +172,38 @@ module DiscourseNpnCritiqueEngagement
       raise Discourse::InvalidAccess.new if !current_user&.staff?
     end
 
+    def since_window?
+      params[:window] == "since_last_pick" && params[:tag].present?
+    end
+
+    def since_payload
+      tag = params[:tag]
+      # A genre never picked has no clock to count from; the scoring window
+      # is the natural horizon — nothing older is part of anyone's standing.
+      cutoff =
+        EditorsPick.last_pick_at_by_genre(category_ids)[tag] ||
+          SiteSetting.npn_critique_window_days.days.ago
+
+      reworks = Reworks.since(category_ids, cutoff)
+      scope = EditorsPick.pickable_scope(category_ids).includes(:tags, :user, :image_upload)
+      # Entries posted since the pick, plus older threads whose author posted
+      # a reworked image since — the rework is what makes them current again.
+      topics =
+        scope
+          .where("topics.created_at >= ? OR topics.id IN (?)", cutoff, reworks.keys.presence || [0])
+          .to_a
+          .select { |topic| topic.tags.map(&:name).include?(tag) }
+
+      {
+        window: "since_last_pick",
+        since: cutoff,
+        week_start: PickWeek.current_start - 7,
+        tag: tag,
+        tags: GenreTags.all,
+        topics: serialize_topics(topics, reworks: reworks),
+      }
+    end
+
     # Picks are judged after a week completes, so without an explicit week
     # the queue opens on the last finished week — mods pick on Sunday, when
     # the just-started week would be empty.
@@ -177,34 +218,14 @@ module DiscourseNpnCritiqueEngagement
     end
 
     def week_topics(week_start)
-      scope =
-        Topic
-          .where(category_id: category_ids)
-          .where(archetype: Archetype.default)
-          .where(deleted_at: nil, visible: true)
-          .where("topics.user_id > 0")
-          .where(created_at: PickWeek.range(week_start))
-          .where(
-            "NOT EXISTS (SELECT 1 FROM topic_custom_fields tcf
-             WHERE tcf.topic_id = topics.id AND tcf.name = 'npn_weekly_challenge_slug')",
-          )
-
-      # Weekly-challenge ANNOUNCEMENT topics aren't pickable images — the
-      # marker field catches ones the weekly-challenge plugin created, the
-      # title prefixes catch older ones from before the marker existed.
-      # Challenge ENTRIES stay in the queue.
-      excluded_title_prefixes.each do |prefix|
-        scope = scope.where("topics.title NOT ILIKE ?", "#{prefix}%")
-      end
-
-      scope.includes(:tags, :user, :image_upload).to_a
+      EditorsPick
+        .pickable_scope(category_ids)
+        .where(created_at: PickWeek.range(week_start))
+        .includes(:tags, :user, :image_upload)
+        .to_a
     end
 
-    def excluded_title_prefixes
-      SiteSetting.npn_critique_coverage_excluded_title_prefixes.to_s.split("|")
-    end
-
-    def serialize_topics(topics)
+    def serialize_topics(topics, reworks: {})
       scores = Score.where(user_id: topics.map(&:user_id).uniq).index_by(&:user_id)
       pick_notes =
         Post
@@ -229,6 +250,7 @@ module DiscourseNpnCritiqueEngagement
             note_genres,
             pendings,
             recent_picks[topic.user_id].to_i,
+            reworks[topic.id],
           )
         end
         .sort_by do |payload|
@@ -236,7 +258,15 @@ module DiscourseNpnCritiqueEngagement
         end
     end
 
-    def topic_payload(topic, score, pick_note, note_genres = {}, pendings = {}, recent_picks = 0)
+    def topic_payload(
+      topic,
+      score,
+      pick_note,
+      note_genres = {},
+      pendings = {},
+      recent_picks = 0,
+      rework = nil
+    )
       pending = pendings[topic.id]
       {
         id: topic.id,
@@ -244,6 +274,8 @@ module DiscourseNpnCritiqueEngagement
         url: topic.relative_url,
         image_url: topic.image_url,
         created_at: topic.created_at,
+        reworked_at: rework&.dig(:reworked_at),
+        rework_url: rework && "#{topic.relative_url}/#{rework[:post_number]}",
         username: topic.user&.username,
         name: topic.user&.name,
         avatar_template: topic.user&.avatar_template,

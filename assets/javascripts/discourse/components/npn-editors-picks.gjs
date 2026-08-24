@@ -32,6 +32,16 @@ function shiftWeek(weekStart, days) {
   return date.toISOString().slice(0, 10);
 }
 
+function sinceLabel(since) {
+  return i18n("npn_critique_engagement.editors_picks.since_of", {
+    date: new Date(since).toLocaleDateString(undefined, {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }),
+  });
+}
+
 export default class NpnEditorsPicks extends Component {
   @service dialog;
   @service modal;
@@ -48,8 +58,18 @@ export default class NpnEditorsPicks extends Component {
     return this.args.model;
   }
 
-  navigate(week, tag) {
-    this.router.transitionTo({ queryParams: { week, tag: tag ?? null } });
+  get sinceMode() {
+    return this.data.window === "since_last_pick";
+  }
+
+  get windowValue() {
+    return this.sinceMode ? "since_last_pick" : "week";
+  }
+
+  navigate(week, tag, window = null) {
+    this.router.transitionTo({
+      queryParams: { week, tag: tag ?? null, window },
+    });
   }
 
   @action
@@ -64,7 +84,22 @@ export default class NpnEditorsPicks extends Component {
 
   @action
   setTag(tag) {
-    this.navigate(this.data.week_start, tag);
+    // The since window is per-genre, so it survives a genre change but not
+    // clearing the genre.
+    this.navigate(
+      this.data.week_start,
+      tag,
+      tag && this.sinceMode ? "since_last_pick" : null
+    );
+  }
+
+  @action
+  setWindow(window) {
+    if (window === "since_last_pick") {
+      this.navigate(null, this.data.tag, window);
+    } else {
+      this.navigate(this.data.week_start, this.data.tag);
+    }
   }
 
   updateTopic(topicId, changes) {
@@ -159,21 +194,27 @@ export default class NpnEditorsPicks extends Component {
       </header>
 
       <div class="npn-editors-picks__controls">
-        <DButton
-          @action={{this.previousWeek}}
-          @icon="chevron-left"
-          @ariaLabel="npn_critique_engagement.editors_picks.previous_week"
-          class="btn-default npn-editors-picks__week-nav"
-        />
-        <span class="npn-editors-picks__week">
-          {{weekLabel this.data.week_start}}
-        </span>
-        <DButton
-          @action={{this.nextWeek}}
-          @icon="chevron-right"
-          @ariaLabel="npn_critique_engagement.editors_picks.next_week"
-          class="btn-default npn-editors-picks__week-nav"
-        />
+        {{#if this.sinceMode}}
+          <span class="npn-editors-picks__week">
+            {{sinceLabel this.data.since}}
+          </span>
+        {{else}}
+          <DButton
+            @action={{this.previousWeek}}
+            @icon="chevron-left"
+            @ariaLabel="npn_critique_engagement.editors_picks.previous_week"
+            class="btn-default npn-editors-picks__week-nav"
+          />
+          <span class="npn-editors-picks__week">
+            {{weekLabel this.data.week_start}}
+          </span>
+          <DButton
+            @action={{this.nextWeek}}
+            @icon="chevron-right"
+            @ariaLabel="npn_critique_engagement.editors_picks.next_week"
+            class="btn-default npn-editors-picks__week-nav"
+          />
+        {{/if}}
 
         <DSelect
           @value={{this.data.tag}}
@@ -185,6 +226,23 @@ export default class NpnEditorsPicks extends Component {
             <select.Option @value={{tag}}>{{tag}}</select.Option>
           {{/each}}
         </DSelect>
+
+        {{#if this.data.tag}}
+          <DSelect
+            @value={{this.windowValue}}
+            @onChange={{this.setWindow}}
+            @includeNone={{false}}
+            class="npn-editors-picks__window-filter"
+            as |select|
+          >
+            <select.Option @value="week">
+              {{i18n "npn_critique_engagement.editors_picks.window_week"}}
+            </select.Option>
+            <select.Option @value="since_last_pick">
+              {{i18n "npn_critique_engagement.editors_picks.window_since"}}
+            </select.Option>
+          </DSelect>
+        {{/if}}
       </div>
 
       {{#if this.data.topics.length}}
@@ -244,6 +302,17 @@ export default class NpnEditorsPicks extends Component {
                   {{i18n "npn_critique_engagement.editors_picks.posted"}}
                   {{dFormatDate topic.created_at format="tiny"}}
                 </div>
+
+                {{#if topic.reworked_at}}
+                  <a
+                    class="npn-editors-picks__reworked"
+                    href={{topic.rework_url}}
+                  >
+                    {{dIcon "arrows-rotate"}}
+                    {{i18n "npn_critique_engagement.editors_picks.reworked"}}
+                    {{dFormatDate topic.reworked_at format="tiny"}}
+                  </a>
+                {{/if}}
 
                 <div
                   class="npn-editors-picks__picks-history"
@@ -329,7 +398,11 @@ export default class NpnEditorsPicks extends Component {
         </ul>
       {{else}}
         <p class="npn-editors-picks__empty">
-          {{i18n "npn_critique_engagement.editors_picks.no_images"}}
+          {{#if this.sinceMode}}
+            {{i18n "npn_critique_engagement.editors_picks.no_images_since"}}
+          {{else}}
+            {{i18n "npn_critique_engagement.editors_picks.no_images"}}
+          {{/if}}
         </p>
       {{/if}}
     </section>

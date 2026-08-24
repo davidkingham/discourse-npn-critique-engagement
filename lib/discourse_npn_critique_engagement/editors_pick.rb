@@ -87,6 +87,73 @@ module DiscourseNpnCritiqueEngagement
       Post.where(topic_id: topic.id, action_code: ACTION_CODE, deleted_at: nil)
     end
 
+    # Every topic a pick could be made from: real, visible image topics in
+    # the critique tree, minus weekly-challenge ANNOUNCEMENTS (the marker
+    # field catches ones the weekly-challenge plugin created, the title
+    # prefixes catch older ones from before the marker existed). Challenge
+    # ENTRIES stay pickable. The review queue, the dashboard's pick board,
+    # and the since-last-pick counts all filter through here so they can
+    # never disagree about what counts as an entry.
+    def pickable_scope(category_ids)
+      scope =
+        Topic
+          .where(category_id: category_ids)
+          .where(archetype: Archetype.default)
+          .where(deleted_at: nil, visible: true)
+          .where("topics.user_id > 0")
+          .where(
+            "NOT EXISTS (SELECT 1 FROM topic_custom_fields tcf
+             WHERE tcf.topic_id = topics.id AND tcf.name = 'npn_weekly_challenge_slug')",
+          )
+
+      SiteSetting
+        .npn_critique_coverage_excluded_title_prefixes
+        .to_s
+        .split("|")
+        .each { |prefix| scope = scope.where("topics.title NOT ILIKE ?", "#{prefix}%") }
+
+      scope
+    end
+
+    # {genre => Time} — when each genre's slot was last filled, over all
+    # time, judged by when the pick was MADE (the note, or a staged pick in
+    # its undo window), not when the image was posted. Picks made before
+    # genres were recorded fall back to counting for every genre their topic
+    # is tagged with. This is the clock behind "entries since the last pick".
+    def last_pick_at_by_genre(category_ids)
+      events = []
+
+      notes =
+        Post
+          .joins(:topic)
+          .where(topics: { category_id: category_ids, deleted_at: nil })
+          .where(action_code: ACTION_CODE, deleted_at: nil)
+          .includes(topic: :tags)
+          .to_a
+      note_genres =
+        PostCustomField
+          .where(post_id: notes.map(&:id), name: GENRE_FIELD)
+          .pluck(:post_id, :value)
+          .to_h
+      notes.each do |note|
+        genres = note_genres[note.id] ? [note_genres[note.id]] : topic_genres(note.topic)
+        events << [genres, note.created_at]
+      end
+
+      PendingPick
+        .joins(:topic)
+        .where(topics: { category_id: category_ids, deleted_at: nil })
+        .includes(topic: :tags)
+        .each do |pending|
+          genres = pending.genre ? [pending.genre] : topic_genres(pending.topic)
+          events << [genres, pending.created_at]
+        end
+
+      events.each_with_object({}) do |(genres, at), map|
+        genres.each { |genre| map[genre] = [map[genre], at].compact.max }
+      end
+    end
+
     # {user_id => count} — how many of each member's topics are editors'
     # picks made in the trailing window (default 12 months). Moderators use
     # recent pick frequency as a selection signal on the review page, so it
@@ -112,6 +179,10 @@ module DiscourseNpnCritiqueEngagement
     end
 
     private
+
+    def topic_genres(topic)
+      topic.tags.map(&:name) - GenreTags.non_genre_tags
+    end
 
     # The badge honors the photographer, not just the post — granted by the
     # picking moderator and tied to the image, so the badge page becomes a

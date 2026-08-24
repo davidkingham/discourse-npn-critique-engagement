@@ -25,6 +25,7 @@ module DiscourseNpnCritiqueEngagement
           render json: {
                    coverage: coverage,
                    new_members: new_members,
+                   reworks: reworks,
                    pick_status: pick_status,
                    week_start: week_start,
                    outreach: mini_rows(Score.where(tier: :priority_outreach).order(score: :asc)),
@@ -163,26 +164,18 @@ module DiscourseNpnCritiqueEngagement
         end
     end
 
-    # One row per genre tag in play: has a pick been MADE since the week
-    # began? Moderators pick at week's end for the week that just closed, so
-    # the board keys on when the pick happened — not on when the image was
+    # One row per genre: has a pick been MADE since the week began?
+    # Moderators pick at week's end for the week that just closed, so the
+    # board keys on when the pick happened — not on when the image was
     # posted — and resets at Pacific midnight on Sunday.
     def pick_status
       return [] if category_ids.blank?
 
-      # The pick pool — this week's and last week's images — supplies the
-      # genre vocabulary; a pick for an even older image still shows via its
-      # declared genre below.
-      pool =
-        Topic
-          .where(category_id: category_ids)
-          .where(archetype: Archetype.default)
-          .where(deleted_at: nil, visible: true)
-          .where("topics.user_id > 0")
-          .where(created_at: PickWeek.cutoff(week_start - 7.days)..)
-          .includes(:tags)
-          .to_a
-
+      # The whole genre vocabulary, not just the genres that happened to be
+      # posted to lately — the same list the pick queue's filter offers. A
+      # quiet genre like astro can go weeks without an entry, and dropping it
+      # from the board is what makes a moderator forget it exists; an empty
+      # slot has to look different from a missing one.
       events = pick_events
       # A moderator can declare "no pick this week" for a genre — a judged
       # empty slot, not a neglected one. Shown unless an actual pick
@@ -194,8 +187,12 @@ module DiscourseNpnCritiqueEngagement
           .order(:created_at)
           .group_by(&:genre)
       tags =
-        (genre_tags(pool) + events.filter_map { |event| event[:genre] } + no_picks.keys).uniq.sort -
-          excluded_pick_tags
+        (GenreTags.all + events.filter_map { |event| event[:genre] } + no_picks.keys).uniq.sort -
+          GenreTags.non_genre_tags
+
+      last_picks = EditorsPick.last_pick_at_by_genre(category_ids)
+      since_counts = since_counts_by_genre(tags, last_picks)
+      accumulate = SiteSetting.npn_critique_accumulate_genres.to_s.split("|")
 
       tags.map do |tag|
         # A pick declared for a genre fills only that genre's slot — tags
@@ -217,8 +214,94 @@ module DiscourseNpnCritiqueEngagement
           picked_by: event&.dig(:username),
           topic_url: event&.dig(:topic_url),
           no_pick: no_pick && { username: no_pick.user&.username },
+          last_pick_at: last_picks[tag],
+          since_count: since_counts[tag],
+          # Accumulate genres run on their own cadence: no weekly nag, just
+          # the pool since the last pick, flagged once it's worth judging.
+          accumulate: accumulate.include?(tag),
+          ready:
+            accumulate.include?(tag) && !event &&
+              since_counts[tag] >= SiteSetting.npn_critique_accumulate_min_entries,
         }
       end
+    end
+
+    # {genre => count} — how many entries each genre has collected since its
+    # last pick: everything posted since, plus older threads reworked since
+    # (an updated image re-enters the pool). This is the number a moderator
+    # judging on the accumulate cadence actually wants — "is the group worth
+    # sitting down for yet?" — and it matches what the pick queue's
+    # since-last-pick view will show. A genre never picked counts within the
+    # scoring window instead, the horizon everything else already uses.
+    def since_counts_by_genre(tags, last_picks)
+      counts = Hash.new(0)
+      return counts if tags.blank?
+
+      fallback = SiteSetting.npn_critique_window_days.days.ago
+      cutoffs = tags.to_h { |tag| [tag, last_picks[tag] || fallback] }
+      earliest = cutoffs.values.min
+
+      EditorsPick
+        .pickable_scope(category_ids)
+        .joins(:tags)
+        .where(tags: { name: tags })
+        .where("topics.created_at >= ?", earliest)
+        .pluck("tags.name", "topics.created_at")
+        .each { |tag, created_at| counts[tag] += 1 if created_at >= cutoffs[tag] }
+
+      reworked = Reworks.since(category_ids, earliest)
+      if reworked.any?
+        EditorsPick
+          .pickable_scope(category_ids)
+          .joins(:tags)
+          .where(id: reworked.keys, tags: { name: tags })
+          .pluck("tags.name", "topics.id", "topics.created_at")
+          .each do |tag, topic_id, created_at|
+            reworked_at = reworked[topic_id][:reworked_at]
+            # Only threads the created_at pass didn't already count.
+            counts[tag] += 1 if reworked_at >= cutoffs[tag] && created_at < cutoffs[tag]
+          end
+      end
+
+      counts
+    end
+
+    # Threads where the photographer posted an updated image after being
+    # critiqued — the loop closing. Keyed on when the REWORK landed, because
+    # the thread itself is old news by then and every other list here has
+    # already scrolled past it. Already-picked threads drop off: the slot
+    # they'd compete for is filled.
+    def reworks
+      rows = Reworks.since(category_ids, SiteSetting.npn_critique_coverage_days.days.ago)
+      return { total: 0, topics: [] } if rows.blank?
+
+      topics =
+        EditorsPick
+          .pickable_scope(category_ids)
+          .where(id: rows.keys)
+          .includes(:user, :image_upload, :tags)
+          .reject { |topic| topic.user.nil? }
+          .reject { |topic| topic.tags.map(&:name).include?(pick_tag) }
+          .sort_by { |topic| -rows[topic.id][:reworked_at].to_f }
+
+      {
+        total: topics.size,
+        topics:
+          topics
+            .first(COVERAGE_LIMIT)
+            .map do |topic|
+              {
+                id: topic.id,
+                title: topic.title,
+                url: "#{topic.relative_url}/#{rows[topic.id][:post_number]}",
+                image_url: topic.image_url,
+                reworked_at: rows[topic.id][:reworked_at],
+                username: topic.user.username,
+                avatar_template: topic.user.avatar_template,
+                tags: topic.tags.map(&:name).sort - [pick_tag],
+              }
+            end,
+      }
     end
 
     # Every pick made since the week turned over — finalized notes and staged
@@ -258,14 +341,6 @@ module DiscourseNpnCritiqueEngagement
           topic_url: record.topic.relative_url,
         }
       end
-    end
-
-    def genre_tags(topics)
-      topics.flat_map { |topic| topic.tags.map(&:name) }.uniq.sort - [pick_tag] - excluded_pick_tags
-    end
-
-    def excluded_pick_tags
-      SiteSetting.npn_critique_pick_excluded_tags.to_s.split("|")
     end
 
     # Members a moderator has set aside stay off the dashboard's to-do lists

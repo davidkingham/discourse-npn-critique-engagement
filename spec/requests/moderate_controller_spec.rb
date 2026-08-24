@@ -165,6 +165,18 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       expect(status["wildlife"]["picked"]).to eq(false)
     end
 
+    it "keeps a quiet genre on the board when nothing was posted to it lately" do
+      astro_tag = Fabricate(:tag, name: "astro")
+      make_image_topic(veteran, tag: astro_tag, created_at: 3.months.ago)
+      make_image_topic(star_member, created_at: 1.hour.ago)
+
+      get "/moderate.json"
+
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status.keys).to contain_exactly("astro", "landscape")
+      expect(status["astro"]["picked"]).to eq(false)
+    end
+
     it "counts a pick made this week even when the image was posted last week" do
       last_week = DiscourseNpnCritiqueEngagement::PickWeek.current_start - 3.days
       image = make_image_topic(veteran, created_at: last_week.to_time)
@@ -266,6 +278,131 @@ describe DiscourseNpnCritiqueEngagement::ModerateController do
       get "/moderate.json"
 
       expect(response.parsed_body["pick_status"].map { |genre| genre["tag"] }).to eq(["landscape"])
+    end
+  end
+
+  describe "since-last-pick counts" do
+    before do
+      sign_in(moderator)
+      SiteSetting.npn_critique_pick_finalize_minutes = 0
+    end
+
+    it "counts entries since each genre's last pick, keyed on when the pick was made" do
+      picked = make_image_topic(veteran, created_at: 10.days.ago)
+      post "/moderate/editors-picks/pick.json", params: { topic_id: picked.id, genre: "landscape" }
+      Post.where(topic_id: picked.id, action_code: "npn_editors_pick").update_all(
+        created_at: 5.days.ago,
+      )
+      make_image_topic(star_member, created_at: 2.days.ago)
+      make_image_topic(newbie, created_at: 1.day.ago)
+
+      get "/moderate.json"
+
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["landscape"]["since_count"]).to eq(2)
+      expect(status["landscape"]["last_pick_at"]).to be_present
+    end
+
+    it "counts within the scoring window for a genre never picked" do
+      make_image_topic(veteran, created_at: 5.days.ago)
+      make_image_topic(star_member, created_at: (SiteSetting.npn_critique_window_days + 5).days.ago)
+
+      get "/moderate.json"
+
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["landscape"]["since_count"]).to eq(1)
+      expect(status["landscape"]["last_pick_at"]).to be_nil
+    end
+
+    it "counts an older thread reworked since the pick as a new entry" do
+      picked = make_image_topic(veteran, created_at: 10.days.ago)
+      reworked = make_image_topic(star_member, created_at: 9.days.ago)
+      Fabricate(:post, topic: reworked, user: veteran, created_at: 8.days.ago)
+      post "/moderate/editors-picks/pick.json", params: { topic_id: picked.id, genre: "landscape" }
+      Post.where(topic_id: picked.id, action_code: "npn_editors_pick").update_all(
+        created_at: 5.days.ago,
+      )
+      rework = Fabricate(:post, topic: reworked, user: star_member, created_at: 1.day.ago)
+      rework.update_columns(image_upload_id: Fabricate(:upload).id)
+
+      get "/moderate.json"
+
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["landscape"]["since_count"]).to eq(1)
+    end
+
+    it "flags an accumulate genre ready at the configured pool size" do
+      SiteSetting.npn_critique_accumulate_genres = "landscape"
+      SiteSetting.npn_critique_accumulate_min_entries = 2
+      make_image_topic(veteran, created_at: 2.days.ago)
+
+      get "/moderate.json"
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["landscape"]["accumulate"]).to eq(true)
+      expect(status["landscape"]["ready"]).to eq(false)
+
+      make_image_topic(star_member, created_at: 1.day.ago)
+
+      get "/moderate.json"
+      status = response.parsed_body["pick_status"].index_by { |genre| genre["tag"] }
+      expect(status["landscape"]["ready"]).to eq(true)
+    end
+  end
+
+  describe "reworks" do
+    before { sign_in(moderator) }
+
+    def rework!(topic, at: 1.hour.ago)
+      post = Fabricate(:post, topic: topic, user: topic.user, created_at: at)
+      post.update_columns(image_upload_id: Fabricate(:upload).id)
+      post
+    end
+
+    it "lists threads whose author posted an updated image after a critique, newest rework first" do
+      first = make_image_topic(veteran, created_at: 8.days.ago)
+      Fabricate(:post, topic: first, user: star_member, created_at: 7.days.ago)
+      rework!(first, at: 2.hours.ago)
+      second = make_image_topic(star_member, created_at: 6.days.ago)
+      Fabricate(:post, topic: second, user: veteran, created_at: 5.days.ago)
+      rework = rework!(second, at: 1.hour.ago)
+
+      get "/moderate.json"
+
+      panel = response.parsed_body["reworks"]
+      expect(panel["total"]).to eq(2)
+      expect(panel["topics"].map { |topic| topic["id"] }).to eq([second.id, first.id])
+      expect(panel["topics"].first["url"]).to eq("#{second.relative_url}/#{rework.post_number}")
+    end
+
+    it "ignores an author image reply that nobody critiqued first" do
+      topic = make_image_topic(veteran, created_at: 8.days.ago)
+      rework!(topic)
+
+      get "/moderate.json"
+
+      expect(response.parsed_body["reworks"]["total"]).to eq(0)
+    end
+
+    it "ignores author replies without an image" do
+      topic = make_image_topic(veteran, created_at: 8.days.ago)
+      Fabricate(:post, topic: topic, user: star_member, created_at: 7.days.ago)
+      Fabricate(:post, topic: topic, user: veteran, created_at: 1.hour.ago)
+
+      get "/moderate.json"
+
+      expect(response.parsed_body["reworks"]["total"]).to eq(0)
+    end
+
+    it "drops threads that are already picks" do
+      SiteSetting.npn_critique_pick_finalize_minutes = 0
+      topic = make_image_topic(veteran, created_at: 8.days.ago)
+      Fabricate(:post, topic: topic, user: star_member, created_at: 7.days.ago)
+      rework!(topic)
+      post "/moderate/editors-picks/pick.json", params: { topic_id: topic.id, genre: "landscape" }
+
+      get "/moderate.json"
+
+      expect(response.parsed_body["reworks"]["total"]).to eq(0)
     end
   end
 
