@@ -23,11 +23,11 @@ end
 # Table name: npn_critique_outreach_logs
 #
 #  id            :bigint           not null, primary key
-#  user_id       :integer          not null
-#  staff_user_id :integer          not null
 #  note          :text             not null
 #  created_at    :datetime         not null
 #  updated_at    :datetime         not null
+#  staff_user_id :integer          not null
+#  user_id       :integer          not null
 #
 # Indexes
 #
