@@ -321,10 +321,16 @@ export default class NpnEditorsPicks extends Component {
                   }}
                 >
                   {{dIcon "star"}}
-                  {{i18n
-                    "npn_critique_engagement.editors_picks.recent_picks"
-                    count=topic.recent_picks
-                  }}
+                  {{#if topic.recent_picks}}
+                    {{i18n
+                      "npn_critique_engagement.editors_picks.recent_picks"
+                      count=topic.recent_picks
+                    }}
+                  {{else}}
+                    {{i18n
+                      "npn_critique_engagement.editors_picks.recent_picks_none"
+                    }}
+                  {{/if}}
                 </div>
 
                 {{#if topic.pending}}
