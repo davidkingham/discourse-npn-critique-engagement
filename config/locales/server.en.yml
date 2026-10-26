@@ -138,7 +138,7 @@ en:
     outreach:
       already_claimed: "@%{username} is already reaching out to this member."
       excluded_member: "This member has been set aside. Put them back in the queue first if you want to reach out."
-      pm_sent_note: 'Sent a private message: "%{title}"'
+      pm_sent_note: 'Sent a personal message: "%{title}"'
     badges:
       contributor_description: "Reached Healthy critique engagement in a calendar month"
       supporter_description: "Reached Excellent critique engagement in a calendar month"

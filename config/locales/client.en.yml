@@ -151,8 +151,8 @@ en:
         no_pick_by: "No pick this week (@%{username})"
         no_pick_undo: "Undo no pick"
         picks_link: "Open the pick queue"
+        since_count_none: "No new entries"
         since_count:
-          zero: "No new entries"
           one: "%{count} new entry"
           other: "%{count} new entries"
         last_pick: "last pick"
@@ -199,8 +199,8 @@ en:
           submit: "Make the pick"
         no_standing: "No recent standing"
         posted: "Posted"
+        recent_picks_none: "No picks in the last 12 months"
         recent_picks:
-          zero: "No picks in the last 12 months"
           one: "%{count} pick in the last 12 months"
           other: "%{count} picks in the last 12 months"
         recent_picks_hint: "How many of this poster's images became Editors' Picks in the last 12 months. Counted when each pick was made."

@@ -343,10 +343,16 @@ export default class NpnModerateDashboard extends Component {
                       @query={{hash tag=genre.tag window="since_last_pick"}}
                       class="npn-moderate__pick-since"
                     >
-                      {{i18n
-                        "npn_critique_engagement.moderate.since_count"
-                        count=genre.since_count
-                      }}
+                      {{#if genre.since_count}}
+                        {{i18n
+                          "npn_critique_engagement.moderate.since_count"
+                          count=genre.since_count
+                        }}
+                      {{else}}
+                        {{i18n
+                          "npn_critique_engagement.moderate.since_count_none"
+                        }}
+                      {{/if}}
                       ·
                       {{#if genre.last_pick_at}}
                         {{i18n "npn_critique_engagement.moderate.last_pick"}}
